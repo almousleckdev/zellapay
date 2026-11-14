@@ -1,0 +1,25 @@
+# Local development infrastructure only.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: zellapay
+      POSTGRES_PASSWORD: zellapay-local-only
+      POSTGRES_DB: zellapay
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zellapay"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata:

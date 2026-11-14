@@ -1,0 +1,67 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - depguard
+    - errcheck
+    - errorlint
+    - funlen
+    - gocognit
+    - gocritic
+    - gocyclo
+    - gosec
+    - govet
+    - ineffassign
+    - noctx
+    - nilerr
+    - revive
+    - staticcheck
+    - unused
+  settings:
+    funlen:
+      lines: 40
+      statements: 30
+    gocyclo:
+      min-complexity: 10
+    gocognit:
+      min-complexity: 15
+    revive:
+      rules:
+        - name: argument-limit
+          arguments: [4]
+        - name: exported
+        - name: unused-parameter
+    depguard:
+      rules:
+        ledger-isolation:
+          files:
+            - "**/internal/ledger/**"
+          deny:
+            - pkg: github.com/zellapay/zellapay/internal/collections
+              desc: ledger must not depend on other domain modules
+            - pkg: github.com/zellapay/zellapay/internal/payouts
+              desc: ledger must not depend on other domain modules
+            - pkg: github.com/zellapay/zellapay/internal/merchants
+              desc: ledger must not depend on other domain modules
+            - pkg: net/http
+              desc: the domain must not import transport packages
+        no-math-rand:
+          files:
+            - "**/internal/**"
+          deny:
+            - pkg: math/rand
+              desc: use crypto/rand for anything security related
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

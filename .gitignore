@@ -1,0 +1,6 @@
+/bin/
+/secrets/
+*.env
+.env
+.DS_Store
+coverage.out
