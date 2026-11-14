@@ -1,43 +1,58 @@
-// Command api is the ZellaPay api binary.
+// Command api serves the ZellaPay HTTP API.
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/zellapay/zellapay/internal/apidocs"
+	"github.com/zellapay/zellapay/internal/apiserver"
 	"github.com/zellapay/zellapay/internal/platform/app"
 	"github.com/zellapay/zellapay/internal/platform/config"
-	"github.com/zellapay/zellapay/internal/platform/httpx"
 	"github.com/zellapay/zellapay/internal/platform/logging"
+	"github.com/zellapay/zellapay/internal/wiring"
 )
 
 func main() {
+	if err := run(); err != nil {
+		slog.Error("api stopped", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	cfg, err := config.Load("api", ":8080")
 	if err != nil {
-		slog.Error("config", "err", err)
-		os.Exit(1)
+		return err
+	}
+	settings, err := wiring.SettingsFromEnv()
+	if err != nil {
+		return err
 	}
 	log := logging.New(cfg.Service, cfg.LogLevel)
 
-	mux := http.NewServeMux()
-	httpx.Health(mux, nil)
-	if cfg.DocsEnabled {
-		apidocs.Register(mux)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	c, err := wiring.Build(ctx, settings, log)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if c.Simulator != nil {
+		go c.Run(ctx, log) // the simulator lives in this process
 	}
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpx.Middleware(log, mux),
+		Handler:           apiserver.New(c, apiserver.Options{DocsEnabled: cfg.DocsEnabled}, log),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	if err := app.Serve(log, srv, cfg.ShutdownTimeout); err != nil {
-		log.Error("server", "err", err)
-		os.Exit(1)
-	}
+	return app.Serve(log, srv, cfg.ShutdownTimeout)
 }

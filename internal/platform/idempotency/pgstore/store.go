@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
 	"github.com/zellapay/zellapay/internal/platform/idempotency/pgstore/sqlcgen"
+	"github.com/zellapay/zellapay/internal/platform/pgconv"
 )
+
+var ts = pgconv.Timestamptz
 
 // Options sets record lifetimes.
 type Options struct {
@@ -41,10 +43,6 @@ func New(pool *pgxpool.Pool, opts Options) *Store {
 		opts.LockTTL = time.Minute
 	}
 	return &Store{pool: pool, opts: opts}
-}
-
-func ts(t time.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t, Valid: true}
 }
 
 // Begin claims the key, takes over a stale claim, or reports why not.

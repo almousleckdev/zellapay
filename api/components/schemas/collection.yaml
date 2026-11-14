@@ -15,8 +15,6 @@ CreateCollection:
       type: string
       maxLength: 200
       description: Shown to the customer when the operator supports it.
-    metadata:
-      $ref: ./common.yaml#/Metadata
 CollectionStatus:
   type: string
   enum: [pending, succeeded, failed, expired]
@@ -31,7 +29,7 @@ Collection:
     - status
     - amount
     - currency
-    - customer_phone
+    - customer_phone_masked
     - merchant_reference
     - created_at
   properties:
@@ -49,20 +47,25 @@ Collection:
       format: int64
       minimum: 0
       description: Fee charged to you, set when the collection succeeds.
-    customer_phone:
-      $ref: ./common.yaml#/Phone
+    customer_phone_masked:
+      type: string
+      description: |
+        The customer's number with the middle hidden. ZellaPay does not
+        return the full number after the request is accepted.
+      examples: ['+241 07 ** ** 56']
     merchant_reference:
       $ref: ./common.yaml#/MerchantReference
     operator:
       $ref: ./common.yaml#/Operator
     failure_code:
       type: [string, 'null']
-      description: Why a failed collection failed.
+      description: |
+        Why a failed collection failed. One of `customer_declined`,
+        `insufficient_customer_funds`, `rejected`, `operator_unavailable`
+        or `operator_error`. Unknown values should be treated as a failure.
       examples: [customer_declined, insufficient_customer_funds]
     description:
       type: string
-    metadata:
-      $ref: ./common.yaml#/Metadata
     created_at:
       $ref: ./common.yaml#/Timestamp
     completed_at:

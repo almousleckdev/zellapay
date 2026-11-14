@@ -61,9 +61,11 @@ when it does. Before relying on a sibling path, check that it exists with
 
 | Area | State |
 |---|---|
-| `/v1` merchant API contract | Drafted in `api/openapi.yaml`, handlers not built |
+| `/v1/collections` endpoints | Built, tested end to end, in the OpenAPI contract |
+| Webhook endpoints, signed delivery with retries and replay | Built and tested end to end |
+| Other `/v1` endpoints (payouts, refunds, balance, operators) | In the contract, handlers not built |
 | Ledger, merchants, API keys, idempotency, simulator | Built and tested |
-| Collections (state machine, ledger posting, operator confirmation, recovery sweeper) | Built and tested, no HTTP routes yet |
+| Collections (state machine, ledger posting, operator confirmation, recovery sweeper) | Built and tested |
 | `/dashboard` and `/admin` backend routes | Not designed yet |
 | Dashboard and admin authentication (people, MFA, roles) | Not designed yet |
 | `zellamerchant`, `zellapayadmin`, `zellaweb` | Scaffolded with docs, no features |

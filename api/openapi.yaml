@@ -88,4 +88,5 @@ components:
       scheme: bearer
       bearerFormat: zp_test_* or zp_live_*
       description: |
-        Secret API key. Scopes: `read`, `collections:write`, `payouts:write`.
+        Secret API key. Scopes: `read`, `collections:write`, `payouts:write`,
+        `webhooks:write`.

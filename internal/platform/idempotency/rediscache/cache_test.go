@@ -7,33 +7,16 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
 	"github.com/zellapay/zellapay/internal/platform/idempotency/rediscache"
+	"github.com/zellapay/zellapay/internal/platform/redistest"
 )
 
 var addr string
 
 func TestMain(m *testing.M) {
-	os.Exit(run(m))
-}
-
-func run(m *testing.M) int {
-	ctx := context.Background()
-	c, err := tcredis.Run(ctx, "redis:7")
-	if err != nil {
-		println("start redis:", err.Error())
-		return 1
-	}
-	defer func() { _ = c.Terminate(ctx) }()
-	uri, err := c.ConnectionString(ctx)
-	if err != nil {
-		println("redis uri:", err.Error())
-		return 1
-	}
-	addr = uri
-	return m.Run()
+	os.Exit(redistest.Main(m, func(url string) { addr = url }))
 }
 
 func newCache(t *testing.T) *rediscache.Cache {

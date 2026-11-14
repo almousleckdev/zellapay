@@ -3,7 +3,6 @@ package pgstore
 import (
 	"context"
 	"net/netip"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -51,14 +50,6 @@ func (s *Store) ListKeys(ctx context.Context, merchantID string) ([]merchants.AP
 		}))
 	}
 	return keys, nil
-}
-
-func timePtr(t pgtype.Timestamptz) *time.Time {
-	if !t.Valid {
-		return nil
-	}
-	v := t.Time
-	return &v
 }
 
 func scopeStrings(in []merchants.Scope) []string {

@@ -27,6 +27,20 @@ const startupTimeout = 60 * time.Second
 //
 //	os.Exit(pgtest.Main(m, func(dsn string) { testDSN = dsn }))
 func Main(m *testing.M, set func(dsn string)) int {
+	dsn, stop, err := Start()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "pgtest:", err)
+		return 1
+	}
+	defer stop()
+	set(dsn)
+	return m.Run()
+}
+
+// Start launches a migrated PostgreSQL and returns its connection string and
+// a function that removes it. Use it when a test package needs more than one
+// container; otherwise prefer Main.
+func Start() (dsn string, stop func(), err error) {
 	ctx := context.Background()
 	c, err := tcpostgres.Run(ctx, "postgres:17",
 		tcpostgres.WithDatabase("zellapay"),
@@ -37,20 +51,17 @@ func Main(m *testing.M, set func(dsn string)) int {
 				WithOccurrence(2).WithStartupTimeout(startupTimeout)),
 	)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "pgtest: start postgres:", err)
-		return 1
+		return "", nil, fmt.Errorf("start postgres: %w", err)
 	}
-	defer func() { _ = c.Terminate(ctx) }()
-	dsn, err := c.ConnectionString(ctx, "sslmode=disable")
-	if err == nil {
+	stop = func() { _ = c.Terminate(ctx) }
+	if dsn, err = c.ConnectionString(ctx, "sslmode=disable"); err == nil {
 		err = migrate(dsn)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "pgtest:", err)
-		return 1
+		stop()
+		return "", nil, err
 	}
-	set(dsn)
-	return m.Run()
+	return dsn, stop, nil
 }
 
 func migrate(dsn string) error {

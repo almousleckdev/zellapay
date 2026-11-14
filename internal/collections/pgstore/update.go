@@ -49,7 +49,24 @@ func persist(
 	if ev.Type == "" {
 		return nil
 	}
-	return q.InsertCollectionEvent(ctx, eventParams(c.ID, ev))
+	if err := q.InsertCollectionEvent(ctx, eventParams(c.ID, ev)); err != nil {
+		return err
+	}
+	return announceFinal(ctx, q, c, ev)
+}
+
+// announceFinal writes the outbox row in the same transaction as the status
+// change, so the event exists exactly when the final status does.
+func announceFinal(
+	ctx context.Context, q *sqlcgen.Queries, c collections.Collection, ev collections.Event,
+) error {
+	typ, final := collections.OutboxType(c.Status)
+	if !final || ev.From == ev.To {
+		return nil
+	}
+	return q.InsertCollectionOutbox(ctx, sqlcgen.InsertCollectionOutboxParams{
+		CollectionID: c.ID, EventType: typ, CreatedAt: ts(ev.At),
+	})
 }
 
 // Record appends an event without changing the collection.

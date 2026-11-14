@@ -8,11 +8,16 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/pgstore/sqlcgen"
+	"github.com/zellapay/zellapay/internal/platform/pgconv"
+)
+
+var (
+	ts      = pgconv.Timestamptz
+	timePtr = pgconv.TimePtr
 )
 
 // Store implements merchants.Repository on PostgreSQL.
@@ -24,10 +29,6 @@ var _ merchants.Repository = (*Store)(nil)
 
 // New returns a Store backed by pool.
 func New(pool *pgxpool.Pool) *Store { return &Store{pool: pool} }
-
-func ts(t time.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t, Valid: true}
-}
 
 // CreateMerchant inserts m and returns the stored row.
 func (s *Store) CreateMerchant(

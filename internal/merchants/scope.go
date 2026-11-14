@@ -8,12 +8,13 @@ const (
 	ScopeRead             Scope = "read"
 	ScopeCollectionsWrite Scope = "collections:write"
 	ScopePayoutsWrite     Scope = "payouts:write"
+	ScopeWebhooksWrite    Scope = "webhooks:write"
 )
 
 // Valid reports whether s is a known scope.
 func (s Scope) Valid() bool {
 	switch s {
-	case ScopeRead, ScopeCollectionsWrite, ScopePayoutsWrite:
+	case ScopeRead, ScopeCollectionsWrite, ScopePayoutsWrite, ScopeWebhooksWrite:
 		return true
 	}
 	return false

@@ -1,30 +1,16 @@
 package pgstore
 
 import (
-	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
-
 	"github.com/zellapay/zellapay/internal/collections"
 	"github.com/zellapay/zellapay/internal/collections/pgstore/sqlcgen"
+	"github.com/zellapay/zellapay/internal/platform/pgconv"
 )
 
-func ts(t time.Time) pgtype.Timestamptz { return pgtype.Timestamptz{Time: t, Valid: true} }
-
-func optTS(t *time.Time) pgtype.Timestamptz {
-	if t == nil {
-		return pgtype.Timestamptz{}
-	}
-	return ts(*t)
-}
-
-func timePtr(t pgtype.Timestamptz) *time.Time {
-	if !t.Valid {
-		return nil
-	}
-	v := t.Time
-	return &v
-}
+var (
+	ts      = pgconv.Timestamptz
+	optTS   = pgconv.OptTimestamptz
+	timePtr = pgconv.TimePtr
+)
 
 func insertParams(nc collections.NewCollection, sealedPhone string) sqlcgen.InsertCollectionParams {
 	return sqlcgen.InsertCollectionParams{

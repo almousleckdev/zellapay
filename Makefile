@@ -1,4 +1,4 @@
-.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate
+.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate migrate
 
 build:
 	go build -o bin/ ./cmd/...
@@ -33,6 +33,9 @@ up:
 
 down:
 	docker compose down
+
+migrate:
+	go run ./cmd/migrate up
 
 run-api:
 	go run ./cmd/api

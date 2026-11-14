@@ -27,6 +27,12 @@ type Repository interface {
 	Update(ctx context.Context, id string, fn UpdateFunc) (Collection, error)
 	// Record appends an event without changing the collection.
 	Record(ctx context.Context, id string, ev Event) error
+	// List returns a merchant's collections, newest first.
+	List(ctx context.Context, q ListQuery) ([]Collection, error)
+	// ClaimOutbox offers up to limit unpublished entries to handle and marks
+	// them published only if handle succeeds. Several callers may run at once;
+	// each entry goes to one caller at a time. Delivery is at least once.
+	ClaimOutbox(ctx context.Context, now time.Time, limit int, handle OutboxHandler) (int, error)
 	// Due returns open collections whose next check time has passed.
 	Due(ctx context.Context, now time.Time, limit int) ([]Collection, error)
 }

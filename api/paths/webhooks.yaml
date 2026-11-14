@@ -4,8 +4,10 @@ endpoints:
     operationId: createWebhookEndpoint
     summary: Register a webhook endpoint
     description: |
-      The signing secret is returned once. Requires scope `read` and a
-      key with webhook management enabled.
+      The signing secret is returned once and stored encrypted; it cannot be
+      retrieved again. The URL must be a public `https` address, otherwise the
+      request fails with `unsafe_url`. Each merchant may register up to 10
+      endpoints (`endpoint_limit_reached`). Requires scope `webhooks:write`.
     parameters:
       - $ref: '../components/parameters.yaml#/IdempotencyKey'
     requestBody:
@@ -53,8 +55,9 @@ replay:
     operationId: replayWebhookEvent
     summary: Redeliver an event
     description: |
-      Queues the event for delivery to your endpoints again. The signature is
-      recomputed with a fresh timestamp. Requires scope `read`.
+      Queues the event for delivery to your current endpoints again. The
+      signature is recomputed with a fresh timestamp. Requires scope
+      `webhooks:write`.
     parameters:
       - $ref: '../components/parameters.yaml#/IdempotencyKey'
       - name: event_id

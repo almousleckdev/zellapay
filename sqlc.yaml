@@ -32,3 +32,11 @@ sql:
         package: sqlcgen
         out: internal/collections/pgstore/sqlcgen
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/webhooks
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/webhooks/pgstore/sqlcgen
+        sql_package: pgx/v5

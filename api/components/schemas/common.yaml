@@ -51,8 +51,10 @@ Timestamp:
   description: UTC time in RFC 3339 format.
 Operator:
   type: string
-  enum: [airtel_money, moov_money]
-  description: The mobile money operator that handled the transaction.
+  enum: [airtel_money, moov_money, simulator]
+  description: |
+    The mobile money operator that handled the transaction. `simulator`
+    appears only in the sandbox.
 Page:
   type: object
   required: [has_more]

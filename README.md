@@ -140,23 +140,33 @@ Report vulnerabilities privately to the security contact in `SECURITY.md`.
 Requires Go 1.27 and Docker.
 
 ```bash
-make up          # PostgreSQL (:5433) and Redis (:6380), localhost only
-make check       # limits, vet, race tests, lint
-make run-api     # http://localhost:8080/healthz
+make up                      # PostgreSQL (:5433) and Redis (:6380), localhost only
+cp .env.example .env.local   # fill in the three secrets: openssl rand -base64 32
+set -a; source .env.local; set +a
+make migrate                 # apply migrations (separate role in production)
+go run ./cmd/zellactl merchant create "My Shop" XAF
+go run ./cmd/zellactl merchant activate <merchant-id>
+go run ./cmd/zellactl key issue <merchant-id> read,collections:write
+make run-api                 # http://localhost:8080
 ```
 
-Configuration is read from `ZP_*` environment variables.
+Open `http://localhost:8080/docs/` for the interactive API reference and use
+the issued key as the bearer token. The sandbox simulates the operator:
+phone numbers ending in `00` succeed, other endings trigger failures and edge
+cases (see [docs/simulator.md](docs/simulator.md)).
+
+`make check` runs the limits, vet, race tests and linters.
 
 ## API example
 
 ```bash
-curl https://sandbox.api.example.com/v1/collections \
+curl http://localhost:8080/v1/collections \
   -H "Authorization: Bearer zp_test_..." \
   -H "Idempotency-Key: 7c1f0a52-..." \
   -d '{
     "amount": 10000,
     "currency": "XAF",
-    "customer_phone": "+24107XXXXXXX",
+    "customer_phone": "+24107000000",
     "merchant_reference": "ORDER-1042"
   }'
 ```
@@ -182,6 +192,7 @@ defined in `api/openapi.yaml`.
 ## Documentation
 
 - [Ecosystem map: how the four projects connect](docs/ecosystem/README.md)
+- [Webhooks guide for merchants](docs/webhooks.md)
 - [Design](docs/DESIGN.md)
 - [Architecture decisions](docs/adr)
 - [Engineering standards](CLAUDE.md)

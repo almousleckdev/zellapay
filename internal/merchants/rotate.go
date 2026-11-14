@@ -48,3 +48,8 @@ func (s *Service) findKey(ctx context.Context, ref KeyRef) (APIKey, error) {
 	}
 	return APIKey{}, ErrNotFound
 }
+
+// ListKeys returns a merchant's keys without their secrets.
+func (s *Service) ListKeys(ctx context.Context, merchantID string) ([]APIKey, error) {
+	return s.repo.ListKeys(ctx, merchantID)
+}

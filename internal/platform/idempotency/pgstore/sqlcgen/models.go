@@ -42,6 +42,14 @@ type CollectionEvent struct {
 	CreatedAt    pgtype.Timestamptz
 }
 
+type CollectionOutbox struct {
+	ID           int64
+	CollectionID string
+	EventType    string
+	CreatedAt    pgtype.Timestamptz
+	PublishedAt  pgtype.Timestamptz
+}
+
 type IdempotencyKey struct {
 	Scope               string
 	Key                 string
@@ -105,4 +113,49 @@ type MerchantApiKey struct {
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 	RevokedAt   pgtype.Timestamptz
+}
+
+type WebhookAttempt struct {
+	ID         int64
+	DeliveryID int64
+	Attempt    int32
+	At         pgtype.Timestamptz
+	StatusCode int32
+	Error      string
+	DurationMs int32
+}
+
+type WebhookDelivery struct {
+	ID            int64
+	EventID       string
+	EndpointID    string
+	Status        string
+	Attempts      int32
+	NextAttemptAt pgtype.Timestamptz
+	RetryUntil    pgtype.Timestamptz
+	LastStatus    int32
+	LastError     string
+	CreatedAt     pgtype.Timestamptz
+	CompletedAt   pgtype.Timestamptz
+}
+
+type WebhookEndpoint struct {
+	ID          string
+	MerchantID  string
+	Url         string
+	SecretEnc   string
+	Events      []string
+	Description string
+	Status      string
+	CreatedAt   pgtype.Timestamptz
+	DisabledAt  pgtype.Timestamptz
+}
+
+type WebhookEvent struct {
+	ID         string
+	MerchantID string
+	Type       string
+	ObjectID   string
+	Payload    []byte
+	CreatedAt  pgtype.Timestamptz
 }
