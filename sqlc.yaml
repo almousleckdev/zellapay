@@ -2,10 +2,17 @@ version: "2"
 sql:
   - engine: postgresql
     schema: db/migrations
-    queries: db/queries
+    queries: db/queries/ledger
     gen:
       go:
         package: sqlcgen
         out: internal/ledger/pgstore/sqlcgen
         sql_package: pgx/v5
-        emit_interface: false
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/merchants
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/merchants/pgstore/sqlcgen
+        sql_package: pgx/v5

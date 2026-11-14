@@ -5,6 +5,8 @@
 package sqlcgen
 
 import (
+	"net/netip"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -34,4 +36,27 @@ type LedgerJournal struct {
 	Reference      string
 	Fingerprint    []byte
 	CreatedAt      pgtype.Timestamptz
+}
+
+type Merchant struct {
+	ID              string
+	Name            string
+	Status          string
+	KycStatus       string
+	DefaultCurrency string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+}
+
+type MerchantApiKey struct {
+	ID          string
+	MerchantID  string
+	LookupID    string
+	SecretHash  []byte
+	Mode        string
+	Scopes      []string
+	IpAllowlist []netip.Prefix
+	CreatedAt   pgtype.Timestamptz
+	ExpiresAt   pgtype.Timestamptz
+	RevokedAt   pgtype.Timestamptz
 }
