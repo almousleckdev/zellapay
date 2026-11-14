@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: zellapay
       POSTGRES_PASSWORD: zellapay-local-only
       POSTGRES_DB: zellapay
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:${ZP_PG_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U zellapay"]
@@ -15,7 +15,7 @@ services:
       retries: 20
   redis:
     image: redis:7
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:${ZP_REDIS_PORT:-6380}:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s

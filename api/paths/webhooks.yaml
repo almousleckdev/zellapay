@@ -1,0 +1,75 @@
+endpoints:
+  post:
+    tags: [Webhooks]
+    operationId: createWebhookEndpoint
+    summary: Register a webhook endpoint
+    description: |
+      The signing secret is returned once. Requires scope `read` and a
+      key with webhook management enabled.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhook.yaml#/CreateWebhookEndpoint'
+    responses:
+      '201':
+        description: The endpoint, including its signing secret.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookEndpoint'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '422':
+        $ref: '../components/responses.yaml#/Unprocessable'
+  get:
+    tags: [Webhooks]
+    operationId: listWebhookEndpoints
+    summary: List webhook endpoints
+    description: Secrets are never returned. Requires scope `read`.
+    responses:
+      '200':
+        description: Your endpoints.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookEndpointList'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+replay:
+  post:
+    tags: [Webhooks]
+    operationId: replayWebhookEvent
+    summary: Redeliver an event
+    description: |
+      Queues the event for delivery to your endpoints again. The signature is
+      recomputed with a fresh timestamp. Requires scope `read`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '202':
+        description: The event was queued for redelivery.
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'

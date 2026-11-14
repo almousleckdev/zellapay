@@ -45,3 +45,11 @@ SELECT id, merchant_id, lookup_id, mode, scopes, ip_allowlist,
   FROM merchant_api_keys
  WHERE merchant_id = @merchant_id
  ORDER BY created_at, id;
+
+-- name: GetMerchantFeeBPS :one
+SELECT fee_bps FROM merchants WHERE id = @id;
+
+-- name: SetMerchantFeeBPS :execrows
+UPDATE merchants
+   SET fee_bps = @fee_bps, updated_at = @now
+ WHERE id = @id;

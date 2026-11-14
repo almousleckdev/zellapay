@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Config struct {
 	Env             string // local | test | staging | production
 	HTTPAddr        string
 	LogLevel        string
+	DocsEnabled     bool // serve Swagger UI and the OpenAPI files
 	ShutdownTimeout time.Duration
 }
 
@@ -30,6 +32,13 @@ func Load(service, defaultAddr string) (Config, error) {
 		return Config{}, fmt.Errorf("ZP_SHUTDOWN_TIMEOUT: %w", err)
 	}
 	c.ShutdownTimeout = d
+	// Interactive docs are on everywhere except production unless asked.
+	defaultDocs := strconv.FormatBool(c.Env != "production")
+	docs, err := strconv.ParseBool(get("ZP_DOCS_ENABLED", defaultDocs))
+	if err != nil {
+		return Config{}, fmt.Errorf("ZP_DOCS_ENABLED: %w", err)
+	}
+	c.DocsEnabled = docs
 	return c, nil
 }
 

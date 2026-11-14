@@ -55,3 +55,25 @@ func accountIDs(j ledger.Journal) []string {
 	sort.Strings(ids)
 	return ids
 }
+
+// EnsureAccount creates the account if it does not exist. It is safe to call
+// concurrently and repeatedly. An existing account with a different type or
+// currency is an error, never silently reused.
+func (s *Store) EnsureAccount(ctx context.Context, a ledger.Account) error {
+	q := sqlcgen.New(s.pool)
+	if err := q.EnsureAccount(ctx, sqlcgen.EnsureAccountParams{
+		ID: a.ID, Code: a.ID, Type: string(a.Type),
+		Currency: string(a.Currency), AllowOverdraft: a.AllowOverdraft,
+	}); err != nil {
+		return err
+	}
+	got, err := q.GetAccount(ctx, a.ID)
+	if err != nil {
+		return err
+	}
+	if got.Type != string(a.Type) || got.Currency != string(a.Currency) ||
+		got.AllowOverdraft != a.AllowOverdraft {
+		return fmt.Errorf("%w: %s", ledger.ErrAccountMismatch, a.ID)
+	}
+	return nil
+}

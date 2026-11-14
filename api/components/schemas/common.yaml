@@ -1,0 +1,64 @@
+Error:
+  type: object
+  required: [error]
+  properties:
+    error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable code. Safe to branch on.
+          examples: [invalid_request, insufficient_funds]
+        message:
+          type: string
+          description: Human-readable explanation. Do not parse it.
+        request_id:
+          type: string
+          description: Quote this when contacting support.
+Currency:
+  type: string
+  pattern: '^[A-Z]{3}$'
+  description: ISO 4217 currency code.
+  examples: [XAF]
+Amount:
+  type: integer
+  format: int64
+  minimum: 1
+  description: Amount in the smallest currency unit.
+  examples: [10000]
+Phone:
+  type: string
+  pattern: '^\+[1-9][0-9]{7,14}$'
+  description: Phone number in E.164 format.
+  examples: ['+24107123456']
+MerchantReference:
+  type: string
+  minLength: 1
+  maxLength: 128
+  description: Your own reference, returned in responses and webhooks.
+  examples: [ORDER-1042]
+Metadata:
+  type: object
+  maxProperties: 20
+  description: Up to 20 string key-value pairs for your own use.
+  additionalProperties:
+    type: string
+    maxLength: 500
+Timestamp:
+  type: string
+  format: date-time
+  description: UTC time in RFC 3339 format.
+Operator:
+  type: string
+  enum: [airtel_money, moov_money]
+  description: The mobile money operator that handled the transaction.
+Page:
+  type: object
+  required: [has_more]
+  properties:
+    has_more:
+      type: boolean
+    next_cursor:
+      type: [string, 'null']
+      description: Pass as `starting_after` to get the next page.

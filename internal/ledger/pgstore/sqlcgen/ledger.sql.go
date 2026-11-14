@@ -95,6 +95,56 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) er
 	return err
 }
 
+const ensureAccount = `-- name: EnsureAccount :exec
+INSERT INTO ledger_accounts (id, code, type, currency, allow_overdraft)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO NOTHING
+`
+
+type EnsureAccountParams struct {
+	ID             string
+	Code           string
+	Type           string
+	Currency       string
+	AllowOverdraft bool
+}
+
+func (q *Queries) EnsureAccount(ctx context.Context, arg EnsureAccountParams) error {
+	_, err := q.db.Exec(ctx, ensureAccount,
+		arg.ID,
+		arg.Code,
+		arg.Type,
+		arg.Currency,
+		arg.AllowOverdraft,
+	)
+	return err
+}
+
+const getAccount = `-- name: GetAccount :one
+SELECT id, type, currency, allow_overdraft
+  FROM ledger_accounts
+ WHERE id = $1
+`
+
+type GetAccountRow struct {
+	ID             string
+	Type           string
+	Currency       string
+	AllowOverdraft bool
+}
+
+func (q *Queries) GetAccount(ctx context.Context, id string) (GetAccountRow, error) {
+	row := q.db.QueryRow(ctx, getAccount, id)
+	var i GetAccountRow
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Currency,
+		&i.AllowOverdraft,
+	)
+	return i, err
+}
+
 const getJournalByKey = `-- name: GetJournalByKey :one
 SELECT id, fingerprint
   FROM ledger_journals

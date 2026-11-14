@@ -1,0 +1,115 @@
+payouts:
+  post:
+    tags: [Payouts]
+    operationId: createPayout
+    summary: Send money to a phone number
+    description: |
+      Funds are held from your available balance, then sent. If your balance
+      is too low the request fails with `insufficient_funds`.
+      Requires scope `payouts:write`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/payout.yaml#/CreatePayout'
+    responses:
+      '201':
+        description: The payout was created.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/payout.yaml#/Payout'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '422':
+        $ref: '../components/responses.yaml#/Unprocessable'
+      '429':
+        $ref: '../components/responses.yaml#/TooManyRequests'
+      '500':
+        $ref: '../components/responses.yaml#/InternalError'
+  get:
+    tags: [Payouts]
+    operationId: listPayouts
+    summary: List payouts
+    description: Newest first. Requires scope `read`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/Limit'
+      - $ref: '../components/parameters.yaml#/StartingAfter'
+    responses:
+      '200':
+        description: A page of payouts.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/payout.yaml#/PayoutList'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+batch:
+  post:
+    tags: [Payouts]
+    operationId: createBatchPayout
+    summary: Send up to 100 payouts at once
+    description: |
+      Each item succeeds or fails on its own. Check every item in the result.
+      Requires scope `payouts:write`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/payout.yaml#/CreateBatchPayout'
+    responses:
+      '207':
+        description: Per-item results, in request order.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/payout.yaml#/BatchPayoutResult'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '422':
+        $ref: '../components/responses.yaml#/Unprocessable'
+payout:
+  get:
+    tags: [Payouts]
+    operationId: getPayout
+    summary: Retrieve a payout
+    description: Requires scope `read`.
+    parameters:
+      - name: payout_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: The payout.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/payout.yaml#/Payout'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'

@@ -15,10 +15,13 @@ type fakeRepo struct {
 	mu        sync.Mutex
 	merchants map[string]Merchant
 	keys      map[string]APIKey
+	fees      map[string]int
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{merchants: map[string]Merchant{}, keys: map[string]APIKey{}}
+	return &fakeRepo{
+		merchants: map[string]Merchant{}, keys: map[string]APIKey{}, fees: map[string]int{},
+	}
 }
 
 func (r *fakeRepo) CreateMerchant(_ context.Context, m Merchant) (Merchant, error) {
@@ -47,6 +50,21 @@ func (r *fakeRepo) SetStatus(_ context.Context, id string, s Status, _ time.Time
 	}
 	m.Status = s
 	r.merchants[id] = m
+	return nil
+}
+
+func (r *fakeRepo) FeeBPS(_ context.Context, id string) (int, error) {
+	if _, ok := r.merchants[id]; !ok {
+		return 0, ErrNotFound
+	}
+	return r.fees[id], nil
+}
+
+func (r *fakeRepo) SetFeeBPS(_ context.Context, id string, bps int, _ time.Time) error {
+	if _, ok := r.merchants[id]; !ok {
+		return ErrNotFound
+	}
+	r.fees[id] = bps
 	return nil
 }
 

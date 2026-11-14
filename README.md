@@ -140,7 +140,7 @@ Report vulnerabilities privately to the security contact in `SECURITY.md`.
 Requires Go 1.27 and Docker.
 
 ```bash
-make up          # PostgreSQL and Redis for local development
+make up          # PostgreSQL (:5433) and Redis (:6380), localhost only
 make check       # limits, vet, race tests, lint
 make run-api     # http://localhost:8080/healthz
 ```
@@ -181,6 +181,7 @@ defined in `api/openapi.yaml`.
 
 ## Documentation
 
+- [Ecosystem map: how the four projects connect](docs/ecosystem/README.md)
 - [Design](docs/DESIGN.md)
 - [Architecture decisions](docs/adr)
 - [Engineering standards](CLAUDE.md)

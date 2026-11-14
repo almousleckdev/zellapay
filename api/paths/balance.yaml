@@ -1,0 +1,34 @@
+balance:
+  get:
+    tags: [Balance]
+    operationId: getBalance
+    summary: Retrieve your balances
+    description: One entry per currency. Requires scope `read`.
+    responses:
+      '200':
+        description: Your balances.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/balance.yaml#/BalanceList'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+operators:
+  get:
+    tags: [Operators]
+    operationId: listOperators
+    summary: List operators and their current health
+    description: Requires scope `read`.
+    responses:
+      '200':
+        description: Operators and their status.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/balance.yaml#/OperatorList'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'

@@ -10,6 +10,51 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Collection struct {
+	ID                  string
+	MerchantID          string
+	IdempotencyKey      string
+	MerchantReference   string
+	Status              string
+	Amount              int64
+	Currency            string
+	FeeAmount           int64
+	CustomerPhoneEnc    string
+	CustomerPhoneIdx    []byte
+	CustomerPhoneMasked string
+	Description         string
+	Operator            string
+	OperatorRef         string
+	FailureCode         string
+	CreatedAt           pgtype.Timestamptz
+	UpdatedAt           pgtype.Timestamptz
+	CompletedAt         pgtype.Timestamptz
+	NextCheckAt         pgtype.Timestamptz
+}
+
+type CollectionEvent struct {
+	ID           int64
+	CollectionID string
+	Type         string
+	FromStatus   string
+	ToStatus     string
+	Detail       string
+	CreatedAt    pgtype.Timestamptz
+}
+
+type IdempotencyKey struct {
+	Scope               string
+	Key                 string
+	Fingerprint         []byte
+	State               string
+	LockedUntil         pgtype.Timestamptz
+	ResponseStatus      pgtype.Int4
+	ResponseContentType pgtype.Text
+	ResponseBody        []byte
+	CreatedAt           pgtype.Timestamptz
+	ExpiresAt           pgtype.Timestamptz
+}
+
 type LedgerAccount struct {
 	ID             string
 	Code           string
@@ -46,6 +91,7 @@ type Merchant struct {
 	DefaultCurrency string
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
+	FeeBps          int32
 }
 
 type MerchantApiKey struct {

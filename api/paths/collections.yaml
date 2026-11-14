@@ -1,0 +1,98 @@
+collections:
+  post:
+    tags: [Collections]
+    operationId: createCollection
+    summary: Request a payment from a customer
+    description: |
+      Sends a payment request to the customer's phone. The response is
+      `pending`. The final result arrives as a `collection.succeeded`,
+      `collection.failed` or `collection.expired` webhook.
+      Requires scope `collections:write`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/collection.yaml#/CreateCollection'
+    responses:
+      '201':
+        description: The collection was created.
+        headers:
+          Idempotent-Replayed:
+            description: Present and `true` when this is a replayed response.
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/collection.yaml#/Collection'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '422':
+        $ref: '../components/responses.yaml#/Unprocessable'
+      '429':
+        $ref: '../components/responses.yaml#/TooManyRequests'
+      '500':
+        $ref: '../components/responses.yaml#/InternalError'
+  get:
+    tags: [Collections]
+    operationId: listCollections
+    summary: List collections
+    description: Newest first. Requires scope `read`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/Limit'
+      - $ref: '../components/parameters.yaml#/StartingAfter'
+      - name: status
+        in: query
+        schema:
+          $ref: '../components/schemas/collection.yaml#/CollectionStatus'
+      - name: merchant_reference
+        in: query
+        schema:
+          type: string
+    responses:
+      '200':
+        description: A page of collections.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/collection.yaml#/CollectionList'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '429':
+        $ref: '../components/responses.yaml#/TooManyRequests'
+collection:
+  get:
+    tags: [Collections]
+    operationId: getCollection
+    summary: Retrieve a collection
+    description: Requires scope `read`.
+    parameters:
+      - name: collection_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: The collection.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/collection.yaml#/Collection'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'

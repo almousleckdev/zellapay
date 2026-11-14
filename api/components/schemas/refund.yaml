@@ -1,0 +1,33 @@
+CreateRefund:
+  type: object
+  required: [collection_id]
+  additionalProperties: false
+  properties:
+    collection_id:
+      type: string
+      description: A succeeded collection.
+    amount:
+      $ref: ./common.yaml#/Amount
+    reason:
+      type: string
+      maxLength: 200
+Refund:
+  type: object
+  required: [id, status, collection_id, amount, currency, created_at]
+  properties:
+    id:
+      type: string
+      examples: [ref_5d6e7f8091a2b3c4d5e6f708]
+    status:
+      type: string
+      enum: [pending, succeeded, failed]
+    collection_id:
+      type: string
+    amount:
+      $ref: ./common.yaml#/Amount
+    currency:
+      $ref: ./common.yaml#/Currency
+    reason:
+      type: string
+    created_at:
+      $ref: ./common.yaml#/Timestamp

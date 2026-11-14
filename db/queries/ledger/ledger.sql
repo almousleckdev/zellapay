@@ -48,3 +48,13 @@ SELECT a.type,
   LEFT JOIN ledger_entries e ON e.account_id = a.id
  WHERE a.id = @id
  GROUP BY a.id, a.type;
+
+-- name: EnsureAccount :exec
+INSERT INTO ledger_accounts (id, code, type, currency, allow_overdraft)
+VALUES (@id, @code, @type, @currency, @allow_overdraft)
+ON CONFLICT (id) DO NOTHING;
+
+-- name: GetAccount :one
+SELECT id, type, currency, allow_overdraft
+  FROM ledger_accounts
+ WHERE id = @id;

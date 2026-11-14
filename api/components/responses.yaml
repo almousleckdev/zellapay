@@ -1,0 +1,93 @@
+BadRequest:
+  description: The request is malformed or fails validation.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_request
+          message: customer_phone must be in E.164 format.
+          request_id: 9f2c1a7e4b3d
+Unauthorized:
+  description: The API key is missing or invalid.
+  headers:
+    WWW-Authenticate:
+      schema:
+        type: string
+        example: Bearer realm="zellapay"
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_api_key
+          message: The API key is missing or invalid.
+          request_id: 9f2c1a7e4b3d
+Forbidden:
+  description: |
+    The key is valid but not permitted: missing scope, merchant inactive, or
+    request from an address outside the key's allowlist.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: insufficient_scope
+          message: The API key does not have the required scope.
+          request_id: 9f2c1a7e4b3d
+NotFound:
+  description: The resource does not exist or belongs to another merchant.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: not_found
+          message: No such collection.
+          request_id: 9f2c1a7e4b3d
+Conflict:
+  description: A request with this Idempotency-Key is still being processed.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: idempotency_key_in_use
+          message: A request with this Idempotency-Key is still being processed.
+          request_id: 9f2c1a7e4b3d
+Unprocessable:
+  description: |
+    The Idempotency-Key was already used with a different request, or the
+    request is valid but cannot be completed, such as insufficient funds.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+      example:
+        error:
+          code: idempotency_key_reused
+          message: This Idempotency-Key was already used with a different request.
+          request_id: 9f2c1a7e4b3d
+TooManyRequests:
+  description: Rate limit exceeded. Retry after the delay in `Retry-After`.
+  headers:
+    Retry-After:
+      schema:
+        type: integer
+        description: Seconds to wait before retrying.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error
+InternalError:
+  description: |
+    An unexpected error. Safe to retry with the same Idempotency-Key.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas/common.yaml#/Error

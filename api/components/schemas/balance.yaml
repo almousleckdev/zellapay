@@ -1,0 +1,46 @@
+Balance:
+  type: object
+  required: [currency, available, pending, held]
+  properties:
+    currency:
+      $ref: ./common.yaml#/Currency
+    available:
+      type: integer
+      format: int64
+      description: Funds you can pay out now.
+    pending:
+      type: integer
+      format: int64
+      description: Collected but not yet released for payout.
+    held:
+      type: integer
+      format: int64
+      description: Reserved for payouts in progress.
+BalanceList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Balance'
+OperatorStatus:
+  type: object
+  required: [code, name, status]
+  properties:
+    code:
+      $ref: ./common.yaml#/Operator
+    name:
+      type: string
+      examples: [Airtel Money]
+    status:
+      type: string
+      enum: [operational, degraded, down]
+OperatorList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/OperatorStatus'

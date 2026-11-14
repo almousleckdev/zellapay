@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/zellapay/zellapay/internal/apidocs"
 	"github.com/zellapay/zellapay/internal/platform/app"
 	"github.com/zellapay/zellapay/internal/platform/config"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
@@ -23,6 +24,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	httpx.Health(mux, nil)
+	if cfg.DocsEnabled {
+		apidocs.Register(mux)
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

@@ -1,0 +1,91 @@
+openapi: 3.1.0
+info:
+  title: ZellaPay API
+  version: 1.0.0
+  summary: Collect and pay out mobile money in Gabon with one API.
+  description: |
+    ZellaPay lets merchants request payments from customers and send money to
+    phone numbers across mobile money operators.
+
+    ## Authentication
+    Send your secret API key as a bearer token. Test keys start with
+    `zp_test_` and only work on the sandbox. Live keys start with `zp_live_`
+    and only work in production. Keep keys on your server.
+
+    ## Idempotency
+    Every `POST` requires an `Idempotency-Key` header. Retrying with the same
+    key and the same body returns the original response and never repeats the
+    operation. Reusing a key with a different body returns `422`.
+
+    ## Amounts
+    Amounts are integers in the smallest currency unit. XAF has no minor
+    unit, so `10000` means 10,000 XAF.
+
+    ## Webhooks
+    Final results are delivered as signed webhooks. Verify the
+    `ZellaPay-Signature` header before trusting an event.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://sandbox.api.zellapay.example/v1
+    description: Sandbox (test keys)
+  - url: https://api.zellapay.example/v1
+    description: Production (live keys)
+security:
+  - bearerAuth: []
+tags:
+  - name: Collections
+    description: Request money from a customer's phone.
+  - name: Payouts
+    description: Send money to a phone number.
+  - name: Refunds
+    description: Return money from a completed collection.
+  - name: Balance
+    description: Merchant balances.
+  - name: Webhooks
+    description: Manage endpoints and replay events.
+  - name: Operators
+    description: Mobile money operators and their health.
+paths:
+  /collections:
+    $ref: ./paths/collections.yaml#/collections
+  /collections/{collection_id}:
+    $ref: ./paths/collections.yaml#/collection
+  /payouts:
+    $ref: ./paths/payouts.yaml#/payouts
+  /payouts/batch:
+    $ref: ./paths/payouts.yaml#/batch
+  /payouts/{payout_id}:
+    $ref: ./paths/payouts.yaml#/payout
+  /refunds:
+    $ref: ./paths/refunds.yaml#/refunds
+  /balance:
+    $ref: ./paths/balance.yaml#/balance
+  /operators:
+    $ref: ./paths/balance.yaml#/operators
+  /webhook-endpoints:
+    $ref: ./paths/webhooks.yaml#/endpoints
+  /webhook-events/{event_id}/replay:
+    $ref: ./paths/webhooks.yaml#/replay
+webhooks:
+  collection.succeeded:
+    $ref: ./paths/events.yaml#/collectionSucceeded
+  collection.failed:
+    $ref: ./paths/events.yaml#/collectionFailed
+  collection.expired:
+    $ref: ./paths/events.yaml#/collectionExpired
+  payout.succeeded:
+    $ref: ./paths/events.yaml#/payoutSucceeded
+  payout.failed:
+    $ref: ./paths/events.yaml#/payoutFailed
+  refund.succeeded:
+    $ref: ./paths/events.yaml#/refundSucceeded
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: zp_test_* or zp_live_*
+      description: |
+        Secret API key. Scopes: `read`, `collections:write`, `payouts:write`.

@@ -127,3 +127,22 @@ func TestStoredKeyHoldsOnlyHash(t *testing.T) {
 		t.Fatal("stored key must hold a 32-byte hash, not the secret")
 	}
 }
+
+func TestFeeBPSDefaultsToZeroAndIsValidated(t *testing.T) {
+	e := newEnv(t, ModeTest)
+	ctx := context.Background()
+	if bps, err := e.svc.FeeBPS(ctx, e.mer.ID); err != nil || bps != 0 {
+		t.Fatalf("default fee = %d, %v", bps, err)
+	}
+	if err := e.svc.SetFeeBPS(ctx, e.mer.ID, 150); err != nil {
+		t.Fatal(err)
+	}
+	if bps, _ := e.svc.FeeBPS(ctx, e.mer.ID); bps != 150 {
+		t.Fatalf("fee = %d, want 150", bps)
+	}
+	for _, bad := range []int{-1, 10_001} {
+		if err := e.svc.SetFeeBPS(ctx, e.mer.ID, bad); !errors.Is(err, ErrInvalidInput) {
+			t.Errorf("%d: got %v", bad, err)
+		}
+	}
+}

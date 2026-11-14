@@ -9,6 +9,9 @@ var (
 	ErrInsufficientFunds = errors.New("ledger: insufficient funds")
 	// ErrIdempotencyConflict means a key was reused with a different journal.
 	ErrIdempotencyConflict = errors.New("ledger: idempotency key reused")
+	// ErrAccountMismatch means an account exists with a different type or
+	// currency than requested.
+	ErrAccountMismatch = errors.New("ledger: account exists with different settings")
 	// ErrInvalidJournal means a journal header field is missing.
 	ErrInvalidJournal = errors.New("ledger: invalid journal")
 )

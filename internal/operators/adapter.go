@@ -18,12 +18,28 @@ const (
 	StatePending
 	StateSucceeded
 	StateFailed
+	// StateExpired means the operator gave up waiting for the customer.
+	StateExpired
 )
 
-// ErrUnknownOutcome means the call may or may not have taken effect
-// (timeout, connection reset, malformed reply). Callers must not
-// assume failure.
-var ErrUnknownOutcome = errors.New("operators: unknown outcome")
+// Errors returned by adapters.
+var (
+	// ErrUnknownOutcome means the call may or may not have taken effect
+	// (timeout, connection reset, malformed reply). Callers must not
+	// assume failure.
+	ErrUnknownOutcome = errors.New("operators: unknown outcome")
+	// ErrNotFound means the operator has no record of the reference. For
+	// a request that timed out, it means the request never arrived.
+	ErrNotFound = errors.New("operators: reference not found")
+	// ErrDuplicateReference means the reference was already used for a
+	// different request.
+	ErrDuplicateReference = errors.New("operators: duplicate reference")
+	// ErrRejected means the operator definitively refused the request, so
+	// nothing happened and it is safe to treat the request as failed.
+	ErrRejected = errors.New("operators: request rejected")
+	// ErrInvalidCallback means a callback failed verification or parsing.
+	ErrInvalidCallback = errors.New("operators: invalid callback")
+)
 
 // Ref identifies a transaction at the operator.
 type Ref struct {
@@ -57,10 +73,14 @@ type Status struct {
 	Fee     *int64
 }
 
-// CallbackEvent is a verified, parsed operator callback.
+// CallbackEvent is a verified, parsed operator callback. Amount and
+// Currency are what the operator reports; the caller must compare them
+// with the original request before trusting the event.
 type CallbackEvent struct {
-	Ref    Ref
-	Status Status
+	Ref      Ref
+	Status   Status
+	Amount   int64
+	Currency string
 }
 
 // Health describes an adapter's current condition.

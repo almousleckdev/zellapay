@@ -1,0 +1,167 @@
+collectionSucceeded:
+  post:
+    tags: [Webhooks]
+    operationId: collectionSucceededEvent
+    summary: A collection succeeded
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.
+
+collectionFailed:
+  post:
+    tags: [Webhooks]
+    operationId: collectionFailedEvent
+    summary: A collection failed
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.
+
+collectionExpired:
+  post:
+    tags: [Webhooks]
+    operationId: collectionExpiredEvent
+    summary: A collection expired
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.
+
+payoutSucceeded:
+  post:
+    tags: [Webhooks]
+    operationId: payoutSucceededEvent
+    summary: A payout succeeded
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.
+
+payoutFailed:
+  post:
+    tags: [Webhooks]
+    operationId: payoutFailedEvent
+    summary: A payout failed
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.
+
+refundSucceeded:
+  post:
+    tags: [Webhooks]
+    operationId: refundSucceededEvent
+    summary: A refund succeeded
+    description: |
+      Sent to your registered endpoints. Verify `ZellaPay-Signature`
+      (`t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) and reject
+      timestamps older than five minutes. Respond with any 2xx status within
+      10 seconds. Failed deliveries are retried with exponential backoff for
+      72 hours. Deliveries are at least once; deduplicate on the event `id`.
+    parameters:
+      - name: ZellaPay-Signature
+        in: header
+        required: true
+        schema:
+          type: string
+        example: t=1763121600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/webhook.yaml#/Event
+    responses:
+      '200':
+        description: Event received.

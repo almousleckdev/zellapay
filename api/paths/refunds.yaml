@@ -1,0 +1,35 @@
+refunds:
+  post:
+    tags: [Refunds]
+    operationId: createRefund
+    summary: Refund a collection
+    description: |
+      Refunds all or part of a succeeded collection. Omit `amount` to
+      refund the full remaining amount. Requires scope `payouts:write`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/refund.yaml#/CreateRefund'
+    responses:
+      '201':
+        description: The refund was created.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/refund.yaml#/Refund'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '422':
+        $ref: '../components/responses.yaml#/Unprocessable'

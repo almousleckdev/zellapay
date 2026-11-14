@@ -16,3 +16,19 @@ sql:
         package: sqlcgen
         out: internal/merchants/pgstore/sqlcgen
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/idempotency
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/platform/idempotency/pgstore/sqlcgen
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/collections
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/collections/pgstore/sqlcgen
+        sql_package: pgx/v5

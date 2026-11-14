@@ -124,6 +124,17 @@ func (q *Queries) GetMerchant(ctx context.Context, id string) (GetMerchantRow, e
 	return i, err
 }
 
+const getMerchantFeeBPS = `-- name: GetMerchantFeeBPS :one
+SELECT fee_bps FROM merchants WHERE id = $1
+`
+
+func (q *Queries) GetMerchantFeeBPS(ctx context.Context, id string) (int32, error) {
+	row := q.db.QueryRow(ctx, getMerchantFeeBPS, id)
+	var fee_bps int32
+	err := row.Scan(&fee_bps)
+	return fee_bps, err
+}
+
 const insertAPIKey = `-- name: InsertAPIKey :exec
 INSERT INTO merchant_api_keys
     (id, merchant_id, lookup_id, secret_hash, mode, scopes, ip_allowlist,
@@ -244,6 +255,26 @@ type SetAPIKeyExpiryParams struct {
 
 func (q *Queries) SetAPIKeyExpiry(ctx context.Context, arg SetAPIKeyExpiryParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setAPIKeyExpiry, arg.ExpiresAt, arg.ID, arg.MerchantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setMerchantFeeBPS = `-- name: SetMerchantFeeBPS :execrows
+UPDATE merchants
+   SET fee_bps = $1, updated_at = $2
+ WHERE id = $3
+`
+
+type SetMerchantFeeBPSParams struct {
+	FeeBps int32
+	Now    pgtype.Timestamptz
+	ID     string
+}
+
+func (q *Queries) SetMerchantFeeBPS(ctx context.Context, arg SetMerchantFeeBPSParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setMerchantFeeBPS, arg.FeeBps, arg.Now, arg.ID)
 	if err != nil {
 		return 0, err
 	}

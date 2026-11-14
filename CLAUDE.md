@@ -5,6 +5,12 @@ leaks personal data or breaks a regulated flow. This is not a tutorial or a
 prototype. Every change is written, reviewed and tested as production code.
 
 Read `docs/DESIGN.md` and `docs/adr/` before changing architecture.
+
+This is one of four ZellaPay projects. The siblings are `../zellamerchant`
+(merchant dashboard), `../zellapayadmin` (admin console) and `../zellaweb`
+(public website). `docs/ecosystem/README.md` explains how they connect, which
+route group each one uses and where the contracts live. Any change to
+`api/` affects them, so follow the contract-first steps there.
 Scoped rules live in `CLAUDE.md` files inside `internal/ledger`,
 `internal/operators` and `db`. They add to this file and never relax it.
 

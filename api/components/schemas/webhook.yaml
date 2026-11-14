@@ -1,0 +1,82 @@
+EventType:
+  type: string
+  enum:
+    - collection.succeeded
+    - collection.failed
+    - collection.expired
+    - payout.succeeded
+    - payout.failed
+    - refund.succeeded
+CreateWebhookEndpoint:
+  type: object
+  required: [url, events]
+  additionalProperties: false
+  properties:
+    url:
+      type: string
+      format: uri
+      pattern: '^https://'
+      description: Public HTTPS URL. Private and loopback addresses are rejected.
+    events:
+      type: array
+      minItems: 1
+      uniqueItems: true
+      items:
+        $ref: '#/EventType'
+    description:
+      type: string
+      maxLength: 200
+WebhookEndpoint:
+  type: object
+  required: [id, url, events, created_at]
+  properties:
+    id:
+      type: string
+      examples: [we_1a2b3c4d5e6f708192a3b4c5]
+    url:
+      type: string
+      format: uri
+    events:
+      type: array
+      items:
+        $ref: '#/EventType'
+    description:
+      type: string
+    secret:
+      type: string
+      description: |
+        Signing secret. Returned only when the endpoint is created. Store it
+        securely; it cannot be retrieved again.
+    created_at:
+      $ref: ./common.yaml#/Timestamp
+WebhookEndpointList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/WebhookEndpoint'
+Event:
+  type: object
+  required: [id, type, created_at, data]
+  description: |
+    The body of a webhook delivery. Events are delivered at least once, so
+    deduplicate on `id`.
+  properties:
+    id:
+      type: string
+      examples: [evt_0f1e2d3c4b5a69788796a5b4]
+    type:
+      $ref: '#/EventType'
+    created_at:
+      $ref: ./common.yaml#/Timestamp
+    data:
+      type: object
+      required: [object]
+      properties:
+        object:
+          oneOf:
+            - $ref: ./collection.yaml#/Collection
+            - $ref: ./payout.yaml#/Payout
+            - $ref: ./refund.yaml#/Refund
