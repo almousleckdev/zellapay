@@ -9,6 +9,7 @@ import (
 	"github.com/zellapay/zellapay/internal/collections/httpapi"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/httpauth"
+	payoutsapi "github.com/zellapay/zellapay/internal/payouts/httpapi"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
 	webhooksapi "github.com/zellapay/zellapay/internal/webhooks/httpapi"
@@ -32,7 +33,9 @@ func New(c *wiring.Container, opts Options, log *slog.Logger) http.Handler {
 	if opts.DocsEnabled {
 		apidocs.Register(mux)
 	}
+	mux.Handle("POST /callbacks/{operator}", c.Callbacks.Handler(log))
 	mountCollections(mux, c, opts, log)
+	mountPayouts(mux, c, opts, log)
 	mountWebhooks(mux, c, opts, log)
 	return httpx.Middleware(log, mux)
 }
@@ -66,6 +69,16 @@ func mountWebhooks(mux *http.ServeMux, c *wiring.Container, opts Options, log *s
 		Authenticate: httpauth.Require(c.Merchants, opts.ClientIP, log),
 		Read:         httpauth.RequireScope(merchants.ScopeRead),
 		Write:        httpauth.RequireScope(merchants.ScopeWebhooksWrite),
+		Idempotent:   idempotent(c, log),
+	})
+}
+
+func mountPayouts(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog.Logger) {
+	h := payoutsapi.New(c.Payouts, merchantOf, log)
+	h.Mount(mux, payoutsapi.Guards{
+		Authenticate: httpauth.Require(c.Merchants, opts.ClientIP, log),
+		Read:         httpauth.RequireScope(merchants.ScopeRead),
+		Write:        httpauth.RequireScope(merchants.ScopePayoutsWrite),
 		Idempotent:   idempotent(c, log),
 	})
 }

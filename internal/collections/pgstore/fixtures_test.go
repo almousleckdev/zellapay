@@ -137,7 +137,11 @@ func (w *world) deliverCallbacks(t *testing.T) int {
 		req := httptest.NewRequestWithContext(context.Background(),
 			http.MethodPost, "/callbacks/simulator", bytes.NewReader(cb.Body))
 		req.Header.Set(simulator.SignatureHeader, cb.Signature)
-		if err := w.svc.HandleCallback(context.Background(), simulator.Code, req); err != nil {
+		ev, err := w.sim.ParseCallback(context.Background(), req)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		if err := w.svc.HandleEvent(context.Background(), simulator.Code, ev); err != nil {
 			t.Fatalf("callback: %v", err)
 		}
 	}

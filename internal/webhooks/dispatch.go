@@ -9,23 +9,34 @@ import (
 	"github.com/zellapay/zellapay/internal/platform/ids"
 )
 
-// Dispatch turns outbox entries into events and schedules their deliveries.
-// It is idempotent: an entry offered twice produces one event.
+// Dispatch turns outbox entries into events and schedules their deliveries,
+// across every stream. It returns how many entries were published. It is
+// idempotent: an entry offered twice produces one event.
 func (s *Service) Dispatch(ctx context.Context, limit int) (int, error) {
-	return s.d.Feed.Claim(ctx, s.now(), limit, s.publishAll)
-}
-
-func (s *Service) publishAll(ctx context.Context, entries []OutboxEntry) error {
-	for _, e := range entries {
-		if err := s.publish(ctx, e); err != nil {
-			return fmt.Errorf("publish %s: %w", e.Type, err)
+	total := 0
+	for _, st := range s.d.Streams {
+		n, err := st.Feed.Claim(ctx, s.now(), limit, s.publisher(st.Source))
+		total += n
+		if err != nil {
+			return total, err
 		}
 	}
-	return nil
+	return total, nil
 }
 
-func (s *Service) publish(ctx context.Context, e OutboxEntry) error {
-	merchantID, object, err := s.d.Source.Object(ctx, e)
+func (s *Service) publisher(src PayloadSource) ClaimHandler {
+	return func(ctx context.Context, entries []OutboxEntry) error {
+		for _, e := range entries {
+			if err := s.publish(ctx, src, e); err != nil {
+				return fmt.Errorf("publish %s: %w", e.Type, err)
+			}
+		}
+		return nil
+	}
+}
+
+func (s *Service) publish(ctx context.Context, src PayloadSource, e OutboxEntry) error {
+	merchantID, object, err := src.Object(ctx, e)
 	if errors.Is(err, ErrNotFound) {
 		// The object is gone, so there is nothing to announce. Skipping keeps
 		// one bad entry from blocking everything behind it.

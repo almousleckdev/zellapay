@@ -19,8 +19,9 @@ import (
 func newProductionWorld(t *testing.T, w *world) *webhooks.Service {
 	t.Helper()
 	return webhooks.NewService(webhooks.Deps{
-		Repo: w.store, Sender: httpsender.New(webhooks.Policy{}, time.Second), Feed: w.feed,
-		Source: w.source, Box: newSealer(t, 7), Clock: w.clock,
+		Repo: w.store, Sender: httpsender.New(webhooks.Policy{}, time.Second),
+		Streams: []webhooks.Stream{{Feed: w.feed, Source: w.source}},
+		Box:     newSealer(t, 7), Clock: w.clock,
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}, webhooks.DefaultConfig())
 }
@@ -77,8 +78,10 @@ func TestAnUnreadableSecretIsAFailedAttemptNotALostEvent(t *testing.T) {
 	w.announce(w.merchant.ID, webhooks.EventCollectionSucceeded)
 	w.dispatch(t)
 	wrongKey := webhooks.NewService(webhooks.Deps{
-		Repo: w.store, Sender: httpsender.New(dev, time.Second), Feed: w.feed, Source: w.source,
-		Box: newSealer(t, 99), Clock: w.clock, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Repo: w.store, Sender: httpsender.New(dev, time.Second),
+		Streams: []webhooks.Stream{{Feed: w.feed, Source: w.source}},
+		Box:     newSealer(t, 99), Clock: w.clock,
+		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}, webhooks.Config{Policy: dev, MaxEndpoints: 10, Lease: time.Minute, Concurrency: 1})
 	res, err := wrongKey.DeliverDue(context.Background(), 10)
 	if err != nil || res.Retrying != 1 || r.Count() != 0 {

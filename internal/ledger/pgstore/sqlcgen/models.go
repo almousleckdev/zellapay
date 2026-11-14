@@ -30,6 +30,7 @@ type Collection struct {
 	UpdatedAt           pgtype.Timestamptz
 	CompletedAt         pgtype.Timestamptz
 	NextCheckAt         pgtype.Timestamptz
+	SettledAt           pgtype.Timestamptz
 }
 
 type CollectionEvent struct {
@@ -100,6 +101,7 @@ type Merchant struct {
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 	FeeBps          int32
+	PayoutFeeBps    int32
 }
 
 type MerchantApiKey struct {
@@ -113,6 +115,46 @@ type MerchantApiKey struct {
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 	RevokedAt   pgtype.Timestamptz
+}
+
+type Payout struct {
+	ID                   string
+	MerchantID           string
+	IdempotencyKey       string
+	MerchantReference    string
+	Status               string
+	Amount               int64
+	Currency             string
+	FeeAmount            int64
+	RecipientPhoneEnc    string
+	RecipientPhoneIdx    []byte
+	RecipientPhoneMasked string
+	Description          string
+	Operator             string
+	OperatorRef          string
+	FailureCode          string
+	CreatedAt            pgtype.Timestamptz
+	UpdatedAt            pgtype.Timestamptz
+	CompletedAt          pgtype.Timestamptz
+	NextCheckAt          pgtype.Timestamptz
+}
+
+type PayoutEvent struct {
+	ID         int64
+	PayoutID   string
+	Type       string
+	FromStatus string
+	ToStatus   string
+	Detail     string
+	CreatedAt  pgtype.Timestamptz
+}
+
+type PayoutOutbox struct {
+	ID          int64
+	PayoutID    string
+	EventType   string
+	CreatedAt   pgtype.Timestamptz
+	PublishedAt pgtype.Timestamptz
 }
 
 type WebhookAttempt struct {

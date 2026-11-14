@@ -6,7 +6,6 @@ EventType:
     - collection.expired
     - payout.succeeded
     - payout.failed
-    - refund.succeeded
 CreateWebhookEndpoint:
   type: object
   required: [url, events]

@@ -4,9 +4,12 @@ payouts:
     operationId: createPayout
     summary: Send money to a phone number
     description: |
-      Funds are held from your available balance, then sent. If your balance
-      is too low the request fails with `insufficient_funds`.
-      Requires scope `payouts:write`.
+      The amount plus our fee is held from your available balance, then sent.
+      The response is `pending`; the final result arrives as a
+      `payout.succeeded` or `payout.failed` webhook. If your balance is too
+      low the request fails with `insufficient_funds`, and nothing is held. A
+      single payout may not exceed 5,000,000. Failed payouts return the held
+      funds to your balance. Requires scope `payouts:write`.
     parameters:
       - $ref: '../components/parameters.yaml#/IdempotencyKey'
     requestBody:

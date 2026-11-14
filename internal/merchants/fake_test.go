@@ -12,15 +12,17 @@ func (c *fakeClock) Now() time.Time { return c.now }
 
 // fakeRepo is an in-memory Repository for unit tests.
 type fakeRepo struct {
-	mu        sync.Mutex
-	merchants map[string]Merchant
-	keys      map[string]APIKey
-	fees      map[string]int
+	mu         sync.Mutex
+	merchants  map[string]Merchant
+	keys       map[string]APIKey
+	fees       map[string]int
+	payoutFees map[string]int
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{
 		merchants: map[string]Merchant{}, keys: map[string]APIKey{}, fees: map[string]int{},
+		payoutFees: map[string]int{},
 	}
 }
 
@@ -65,6 +67,21 @@ func (r *fakeRepo) SetFeeBPS(_ context.Context, id string, bps int, _ time.Time)
 		return ErrNotFound
 	}
 	r.fees[id] = bps
+	return nil
+}
+
+func (r *fakeRepo) PayoutFeeBPS(_ context.Context, id string) (int, error) {
+	if _, ok := r.merchants[id]; !ok {
+		return 0, ErrNotFound
+	}
+	return r.payoutFees[id], nil
+}
+
+func (r *fakeRepo) SetPayoutFeeBPS(_ context.Context, id string, bps int, _ time.Time) error {
+	if _, ok := r.merchants[id]; !ok {
+		return ErrNotFound
+	}
+	r.payoutFees[id] = bps
 	return nil
 }
 

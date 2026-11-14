@@ -3,32 +3,34 @@ package collections
 import (
 	"context"
 	"errors"
-	"net/http"
+	"strings"
 
+	"github.com/zellapay/zellapay/internal/callbacks"
 	"github.com/zellapay/zellapay/internal/operators"
 )
 
-// HandleCallback processes a notification from an operator. The callback is
-// verified by the adapter, checked against the original request, and then
-// confirmed with the operator before any money is recorded.
-func (s *Service) HandleCallback(ctx context.Context, operatorCode string, r *http.Request) error {
-	a, ok := s.d.Router.Adapter(operatorCode)
-	if !ok {
-		return ErrUnknownOperator
-	}
-	ev, err := a.ParseCallback(ctx, r)
-	if err != nil {
-		return err
-	}
+const idPrefix = "col_"
+
+// Owns reports whether reference was issued by this module.
+func (s *Service) Owns(reference string) bool {
+	return strings.HasPrefix(reference, idPrefix)
+}
+
+// HandleEvent processes a verified operator callback. The callback is
+// checked against the original request and then confirmed with the operator
+// before any money is recorded.
+func (s *Service) HandleEvent(
+	ctx context.Context, operatorCode string, ev operators.CallbackEvent,
+) error {
 	c, err := s.d.Repo.Get(ctx, ev.Ref.OurRef)
 	if errors.Is(err, ErrNotFound) {
-		return ErrUnknownReference
+		return callbacks.ErrUnknownReference
 	}
 	if err != nil {
 		return err
 	}
 	if c.Operator != operatorCode {
-		return ErrUnknownReference
+		return callbacks.ErrUnknownReference
 	}
 	if ev.Amount != c.Amount || ev.Currency != c.Currency {
 		return s.flagMismatch(ctx, c, ev)

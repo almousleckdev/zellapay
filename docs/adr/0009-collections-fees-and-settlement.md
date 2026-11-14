@@ -34,7 +34,7 @@ never leave a succeeded collection without its money.
 ### Settlement
 Funds sit in the merchant's `pending` account. A scheduled job releases them
 to `available` after a settlement delay, defaulting to one day (T+1) and
-configurable per environment. This job is not built yet.
+configurable per environment (`ZP_SETTLEMENT_DELAY`). It is built; see ADR 0011.
 
 ### Who decides the outcome
 - The operator's status endpoint is authoritative. A callback is only a hint

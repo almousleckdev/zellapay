@@ -10,6 +10,11 @@ final result. Use webhooks instead of polling.
 | `collection.succeeded` | The customer paid and the money is recorded |
 | `collection.failed` | The customer declined, the operator refused, or the request never arrived |
 | `collection.expired` | The operator gave up waiting for the customer |
+| `payout.succeeded` | The money reached the recipient and your held funds were spent |
+| `payout.failed` | The payout did not happen and the held funds were returned to you |
+
+Payout events carry the payout object, exactly as `GET /v1/payouts/{id}` returns
+it.
 
 ## Body
 

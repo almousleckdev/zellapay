@@ -33,6 +33,11 @@ type Repository interface {
 	// them published only if handle succeeds. Several callers may run at once;
 	// each entry goes to one caller at a time. Delivery is at least once.
 	ClaimOutbox(ctx context.Context, now time.Time, limit int, handle OutboxHandler) (int, error)
+	// Unsettled returns succeeded collections completed before the cutoff
+	// whose funds are still pending. Only the money fields are filled in.
+	Unsettled(ctx context.Context, before time.Time, limit int) ([]Collection, error)
+	// MarkSettled records that a collection's funds were released.
+	MarkSettled(ctx context.Context, id string, at time.Time) error
 	// Due returns open collections whose next check time has passed.
 	Due(ctx context.Context, now time.Time, limit int) ([]Collection, error)
 }

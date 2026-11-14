@@ -36,6 +36,8 @@ func (c *Container) Run(ctx context.Context, log *slog.Logger) {
 			}
 			if now.Sub(lastSweep) >= sweepInterval {
 				c.sweep(ctx, log)
+				c.sweepPayouts(ctx, log)
+				c.settle(ctx, log)
 				lastSweep = now
 			}
 			c.runWebhooks(ctx, log)
@@ -67,7 +69,7 @@ func (c *Container) deliverSimulatorCallbacks(ctx context.Context, log *slog.Log
 			continue
 		}
 		req.Header.Set(simulator.SignatureHeader, cb.Signature)
-		if err := c.Collections.HandleCallback(ctx, simulator.Code, req); err != nil {
+		if err := c.Callbacks.Handle(ctx, simulator.Code, req); err != nil {
 			log.Error("sandbox callback failed", "err", err)
 		}
 	}
@@ -82,5 +84,29 @@ func (c *Container) sweep(ctx context.Context, log *slog.Logger) {
 	}
 	if res.Checked > 0 {
 		log.Info("sweep", "checked", res.Checked, "changed", res.Changed, "failed", res.Failed)
+	}
+}
+
+func (c *Container) sweepPayouts(ctx context.Context, log *slog.Logger) {
+	res, err := c.Payouts.Sweep(ctx, sweepBatch)
+	if err != nil {
+		log.Error("payout sweep failed", "err", err)
+		return
+	}
+	if res.Checked > 0 {
+		log.Info("payout sweep",
+			"checked", res.Checked, "changed", res.Changed, "failed", res.Failed)
+	}
+}
+
+// settle releases collected funds whose settlement delay has passed.
+func (c *Container) settle(ctx context.Context, log *slog.Logger) {
+	res, err := c.Collections.Settle(ctx, sweepBatch)
+	if err != nil {
+		log.Error("settlement failed", "err", err)
+		return
+	}
+	if res.Settled > 0 || res.Failed > 0 {
+		log.Info("settlement", "settled", res.Settled, "failed", res.Failed)
 	}
 }

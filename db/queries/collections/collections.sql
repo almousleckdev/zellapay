@@ -70,3 +70,17 @@ SELECT type, from_status, to_status, detail, created_at
   FROM collection_events
  WHERE collection_id = @collection_id
  ORDER BY id;
+
+-- name: ListUnsettledCollections :many
+SELECT id, merchant_id, amount, currency, fee_amount, completed_at
+  FROM collections
+ WHERE status = 'succeeded'
+   AND settled_at IS NULL
+   AND completed_at <= @before
+ ORDER BY completed_at
+ LIMIT @batch_size;
+
+-- name: MarkCollectionSettled :exec
+UPDATE collections
+   SET settled_at = @settled_at
+ WHERE id = @id AND status = 'succeeded' AND settled_at IS NULL;

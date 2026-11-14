@@ -146,3 +146,26 @@ func TestFeeBPSDefaultsToZeroAndIsValidated(t *testing.T) {
 		}
 	}
 }
+
+func TestPayoutFeeIsSeparateFromTheCollectionFee(t *testing.T) {
+	e := newEnv(t, ModeTest)
+	ctx := context.Background()
+	if err := e.svc.SetFeeBPS(ctx, e.mer.ID, 150); err != nil {
+		t.Fatal(err)
+	}
+	if bps, _ := e.svc.PayoutFeeBPS(ctx, e.mer.ID); bps != 0 {
+		t.Fatalf("payout fee must default to 0, got %d", bps)
+	}
+	if err := e.svc.SetPayoutFeeBPS(ctx, e.mer.ID, 100); err != nil {
+		t.Fatal(err)
+	}
+	if bps, _ := e.svc.PayoutFeeBPS(ctx, e.mer.ID); bps != 100 {
+		t.Fatalf("payout fee = %d", bps)
+	}
+	if bps, _ := e.svc.FeeBPS(ctx, e.mer.ID); bps != 150 {
+		t.Fatalf("collection fee must be untouched, got %d", bps)
+	}
+	if err := e.svc.SetPayoutFeeBPS(ctx, e.mer.ID, 10_001); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("got %v", err)
+	}
+}

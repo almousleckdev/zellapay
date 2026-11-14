@@ -47,6 +47,21 @@ func merchantFee(ctx context.Context, svc *merchants.Service, a []string) error 
 	return nil
 }
 
+func merchantPayoutFee(ctx context.Context, svc *merchants.Service, a []string) error {
+	if len(a) != 2 {
+		return fmt.Errorf("%s", usage)
+	}
+	bps, err := strconv.Atoi(a[1])
+	if err != nil {
+		return fmt.Errorf("basis points must be a whole number")
+	}
+	if err := svc.SetPayoutFeeBPS(ctx, a[0], bps); err != nil {
+		return err
+	}
+	fmt.Printf("merchant %s payout fee set to %d basis points\n", a[0], bps)
+	return nil
+}
+
 // keyIssue prints the secret once. It is not stored and cannot be shown again.
 func keyIssue(ctx context.Context, svc *merchants.Service, a []string) error {
 	if len(a) != 2 {

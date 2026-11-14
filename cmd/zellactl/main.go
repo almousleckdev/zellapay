@@ -19,6 +19,7 @@ const usage = `usage:
   zellactl merchant create <name> <currency>
   zellactl merchant activate <merchant-id>
   zellactl merchant fee <merchant-id> <basis-points>
+  zellactl merchant payout-fee <merchant-id> <basis-points>
   zellactl key issue <merchant-id> <scope[,scope...]>
 
 scopes: read, collections:write, payouts:write, webhooks:write
@@ -59,6 +60,8 @@ func dispatch(ctx context.Context, svc *merchants.Service, args []string) error 
 		return merchantActivate(ctx, svc, args[2:])
 	case "merchant fee":
 		return merchantFee(ctx, svc, args[2:])
+	case "merchant payout-fee":
+		return merchantPayoutFee(ctx, svc, args[2:])
 	case "key issue":
 		return keyIssue(ctx, svc, args[2:])
 	}

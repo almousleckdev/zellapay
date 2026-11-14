@@ -14,9 +14,8 @@ import (
 
 // fakeService records calls and returns canned results.
 type fakeService struct {
-	created  collections.CreateInput
-	listed   collections.ListQuery
-	callback string
+	created collections.CreateInput
+	listed  collections.ListQuery
 
 	collection collections.Collection
 	page       collections.Page
@@ -37,11 +36,6 @@ func (f *fakeService) Get(context.Context, string) (collections.Collection, erro
 func (f *fakeService) List(_ context.Context, q collections.ListQuery) (collections.Page, error) {
 	f.listed = q
 	return f.page, f.err
-}
-
-func (f *fakeService) HandleCallback(_ context.Context, op string, _ *http.Request) error {
-	f.callback = op
-	return f.err
 }
 
 var created = time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)

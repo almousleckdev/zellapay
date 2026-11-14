@@ -26,6 +26,7 @@ type Config struct {
 	CreatedGrace        time.Duration // how long a stored request may await the operator call
 	StaleAfter          time.Duration // age at which a pending one needs attention
 	StaleCheckAfter     time.Duration // between checks once stale
+	SettlementDelay     time.Duration // before collected funds become withdrawable
 }
 
 // DefaultConfig returns conservative intervals.
@@ -36,6 +37,7 @@ func DefaultConfig() Config {
 		CreatedGrace:        2 * time.Minute,
 		StaleAfter:          24 * time.Hour,
 		StaleCheckAfter:     time.Hour,
+		SettlementDelay:     24 * time.Hour,
 	}
 }
 

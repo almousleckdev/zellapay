@@ -79,8 +79,6 @@ webhooks:
     $ref: ./paths/events.yaml#/payoutSucceeded
   payout.failed:
     $ref: ./paths/events.yaml#/payoutFailed
-  refund.succeeded:
-    $ref: ./paths/events.yaml#/refundSucceeded
 components:
   securitySchemes:
     bearerAuth:

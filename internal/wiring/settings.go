@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/webhooks"
@@ -36,6 +37,11 @@ type Settings struct {
 	// WebhookPolicy limits where webhooks may be sent. Outside production it
 	// permits local receivers; production always uses the strict zero value.
 	WebhookPolicy webhooks.Policy
+
+	// SettlementDelay is how long collected funds wait before a merchant can
+	// pay them out. PayoutMaxAmount caps a single payout, in the smallest unit.
+	SettlementDelay time.Duration
+	PayoutMaxAmount int64
 }
 
 // SettingsFromEnv reads and validates the settings. The error names the
@@ -60,7 +66,7 @@ func SettingsFromEnv() (Settings, error) {
 	errs = append(errs, err)
 	s.BlindIndexKey, err = secretFromEnv("ZP_BLIND_INDEX_KEY")
 	errs = append(errs, err)
-	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy())
+	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits())
 	if err := errors.Join(errs...); err != nil {
 		return Settings{}, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -83,6 +89,34 @@ func (s *Settings) loadSimulator() error {
 	s.SimulatorPrefix = getenv("ZP_SIMULATOR_PREFIX", "+241")
 	s.SimulatorSecret, err = secretFromEnv("ZP_SIMULATOR_SECRET")
 	return err
+}
+
+// Validate rejects settings that would make the system misbehave silently,
+// such as a payout cap of zero that refuses every payout. SettingsFromEnv
+// results always pass; code that builds Settings by hand must too.
+func (s Settings) Validate() error {
+	var errs []error
+	if s.PayoutMaxAmount <= 0 {
+		errs = append(errs, errors.New("PayoutMaxAmount: must be positive"))
+	}
+	if s.SettlementDelay < 0 {
+		errs = append(errs, errors.New("SettlementDelay: must not be negative"))
+	}
+	return errors.Join(errs...)
+}
+
+func (s *Settings) loadLimits() error {
+	d, err := time.ParseDuration(getenv("ZP_SETTLEMENT_DELAY", "24h"))
+	if err != nil || d < 0 {
+		return errors.New("ZP_SETTLEMENT_DELAY: not a valid duration (for example 24h)")
+	}
+	s.SettlementDelay = d
+	max, err := strconv.ParseInt(getenv("ZP_PAYOUT_MAX_AMOUNT", "5000000"), 10, 64)
+	if err != nil || max <= 0 {
+		return errors.New("ZP_PAYOUT_MAX_AMOUNT: must be a positive whole number")
+	}
+	s.PayoutMaxAmount = max
+	return nil
 }
 
 func (s *Settings) loadWebhookPolicy() error {

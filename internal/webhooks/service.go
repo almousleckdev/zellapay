@@ -13,11 +13,18 @@ import (
 type Deps struct {
 	Repo   Repository
 	Sender Sender
+	// Streams are the sources of events. Each has its own outbox and its own
+	// way to describe the objects it announces.
+	Streams []Stream
+	Box     SecretBox
+	Clock   clock.Clock
+	Log     *slog.Logger
+}
+
+// Stream pairs an outbox with the source that describes its objects.
+type Stream struct {
 	Feed   Feed
 	Source PayloadSource
-	Box    SecretBox
-	Clock  clock.Clock
-	Log    *slog.Logger
 }
 
 // Config tunes the service.

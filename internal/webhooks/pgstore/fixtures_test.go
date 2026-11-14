@@ -110,8 +110,9 @@ func newWorld(t *testing.T) *world {
 	}
 	w.merchant = m
 	w.svc = webhooks.NewService(webhooks.Deps{
-		Repo: w.store, Sender: httpsender.New(dev, 2*time.Second), Feed: w.feed, Source: w.source,
-		Box: newSealer(t, 7), Clock: clk, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Repo: w.store, Sender: httpsender.New(dev, 2*time.Second),
+		Streams: []webhooks.Stream{{Feed: w.feed, Source: w.source}},
+		Box:     newSealer(t, 7), Clock: clk, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}, webhooks.Config{Policy: dev, MaxEndpoints: 10, Lease: time.Minute, Concurrency: 4})
 	return w
 }

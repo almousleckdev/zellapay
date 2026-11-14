@@ -19,7 +19,11 @@ followed by the two digits below (for example `+24107000003`).
 | `06` | Succeeds; no callback is ever delivered |
 | `07` | Succeeds; the callback reports a different amount |
 | `08` | The operator rejects the request at initiation |
-| `09` | The customer never answers; the operator reports it expired |
+| `09` | The customer never answers; the operator reports it expired (collections) |
+
+The same numbers drive payouts: `00` pays, `01` and `08` fail and return the held
+funds, `03` is resolved by the status query, `04` stays held, `05` is a duplicate
+callback, `07` is held for a person.
 
 ## What each scenario proves
 

@@ -14,8 +14,6 @@ CreatePayout:
     description:
       type: string
       maxLength: 200
-    metadata:
-      $ref: ./common.yaml#/Metadata
 PayoutStatus:
   type: string
   enum: [pending, succeeded, failed]
@@ -30,7 +28,7 @@ Payout:
     - status
     - amount
     - currency
-    - recipient_phone
+    - recipient_phone_masked
     - merchant_reference
     - created_at
   properties:
@@ -47,18 +45,23 @@ Payout:
       type: integer
       format: int64
       minimum: 0
-    recipient_phone:
-      $ref: ./common.yaml#/Phone
+      description: Fee charged to you, fixed when the payout is created.
+    recipient_phone_masked:
+      type: string
+      description: The recipient's number with the middle hidden.
+      examples: ['+241 07 ** ** 56']
     merchant_reference:
       $ref: ./common.yaml#/MerchantReference
     operator:
       $ref: ./common.yaml#/Operator
     failure_code:
       type: [string, 'null']
+      description: |
+        Why a failed payout failed. One of `insufficient_funds`, `rejected`,
+        `operator_unavailable` or `operator_error`. Treat unknown values as a
+        failure.
     description:
       type: string
-    metadata:
-      $ref: ./common.yaml#/Metadata
     created_at:
       $ref: ./common.yaml#/Timestamp
     completed_at:

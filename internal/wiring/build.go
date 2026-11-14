@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/zellapay/zellapay/internal/callbacks"
 	"github.com/zellapay/zellapay/internal/collections"
 	collectionstore "github.com/zellapay/zellapay/internal/collections/pgstore"
 	ledgerstore "github.com/zellapay/zellapay/internal/ledger/pgstore"
@@ -17,6 +18,8 @@ import (
 	"github.com/zellapay/zellapay/internal/operators"
 	"github.com/zellapay/zellapay/internal/operators/router"
 	"github.com/zellapay/zellapay/internal/operators/simulator"
+	"github.com/zellapay/zellapay/internal/payouts"
+	payoutstore "github.com/zellapay/zellapay/internal/payouts/pgstore"
 	"github.com/zellapay/zellapay/internal/platform/clock"
 	"github.com/zellapay/zellapay/internal/platform/crypto"
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
@@ -42,7 +45,9 @@ type Container struct {
 	Redis       *redis.Client
 	Merchants   *merchants.Service
 	Collections *collections.Service
+	Payouts     *payouts.Service
 	Webhooks    *webhooks.Service
+	Callbacks   *callbacks.Dispatcher
 	Idempotency idempotency.Store
 	// Simulator is set only when enabled. It keeps state in memory, so it is
 	// usable from the process that built it, not from a separate worker.
@@ -58,6 +63,9 @@ func Build(ctx context.Context, s Settings, log *slog.Logger) (*Container, error
 func BuildWithClock(
 	ctx context.Context, s Settings, clk clock.Clock, log *slog.Logger,
 ) (*Container, error) {
+	if err := s.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid settings: %w", err)
+	}
 	pool, err := pgxpool.New(ctx, s.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("database: %w", err)
@@ -108,11 +116,21 @@ func (c *Container) assemble(log *slog.Logger) error {
 	}
 	c.Merchants = merchants.NewService(merchantstore.New(c.Pool), c.Clock, c.Settings.Mode)
 	led := ledgerstore.New(c.Pool)
+	collectionCfg := collections.DefaultConfig()
+	collectionCfg.SettlementDelay = c.Settings.SettlementDelay
 	c.Collections = collections.NewService(collections.Deps{
 		Repo:   collectionstore.New(c.Pool, sealer, indexer),
 		Terms:  c.Merchants,
 		Router: rt, Ledger: led, Accounts: led, Clock: c.Clock, Log: log,
-	}, collections.DefaultConfig())
+	}, collectionCfg)
+	payoutCfg := payouts.DefaultConfig()
+	payoutCfg.MaxAmount = c.Settings.PayoutMaxAmount
+	c.Payouts = payouts.NewService(payouts.Deps{
+		Repo:   payoutstore.New(c.Pool, sealer, indexer),
+		Terms:  c.Merchants,
+		Router: rt, Ledger: led, Accounts: led, Clock: c.Clock, Log: log,
+	}, payoutCfg)
+	c.Callbacks = callbacks.New(rt, c.Collections, c.Payouts)
 	c.Webhooks = c.buildWebhooks(sealer, log)
 	c.Idempotency = c.buildIdempotency(log)
 	return nil
@@ -124,9 +142,14 @@ func (c *Container) buildWebhooks(sealer *crypto.Sealer, log *slog.Logger) *webh
 	return webhooks.NewService(webhooks.Deps{
 		Repo:   webhookstore.New(c.Pool),
 		Sender: httpsender.New(cfg.Policy, webhookTimeout),
-		Feed:   collectionFeed{svc: c.Collections},
-		Source: collectionSource{svc: c.Collections},
-		Box:    sealer, Clock: c.Clock, Log: log,
+		Streams: []webhooks.Stream{
+			{
+				Feed:   collectionFeed{svc: c.Collections},
+				Source: collectionSource{svc: c.Collections},
+			},
+			{Feed: payoutFeed{svc: c.Payouts}, Source: payoutSource{svc: c.Payouts}},
+		},
+		Box: sealer, Clock: c.Clock, Log: log,
 	}, cfg)
 }
 

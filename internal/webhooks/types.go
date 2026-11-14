@@ -13,12 +13,16 @@ const (
 	EventCollectionSucceeded = "collection.succeeded"
 	EventCollectionFailed    = "collection.failed"
 	EventCollectionExpired   = "collection.expired"
+	EventPayoutSucceeded     = "payout.succeeded"
+	EventPayoutFailed        = "payout.failed"
 )
 
 var knownEvents = map[string]bool{
 	EventCollectionSucceeded: true,
 	EventCollectionFailed:    true,
 	EventCollectionExpired:   true,
+	EventPayoutSucceeded:     true,
+	EventPayoutFailed:        true,
 }
 
 // KnownEvent reports whether t is an event type merchants may subscribe to.

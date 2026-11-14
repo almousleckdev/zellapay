@@ -140,14 +140,15 @@ Report vulnerabilities privately to the security contact in `SECURITY.md`.
 Requires Go 1.27 and Docker.
 
 ```bash
-make up                      # PostgreSQL (:5433) and Redis (:6380), localhost only
-cp .env.example .env.local   # fill in the three secrets: openssl rand -base64 32
-set -a; source .env.local; set +a
-make migrate                 # apply migrations (separate role in production)
+make up        # PostgreSQL (:5433) and Redis (:6380), localhost only
+make env       # creates .env.local with fresh secrets (once; never overwrites)
+make migrate   # applies the database migrations
 go run ./cmd/zellactl merchant create "My Shop" XAF
 go run ./cmd/zellactl merchant activate <merchant-id>
-go run ./cmd/zellactl key issue <merchant-id> read,collections:write
-make run-api                 # http://localhost:8080
+go run ./cmd/zellactl merchant fee <merchant-id> 150          # collection fee, basis points
+go run ./cmd/zellactl merchant payout-fee <merchant-id> 100   # payout fee, basis points
+go run ./cmd/zellactl key issue <merchant-id> read,collections:write,payouts:write,webhooks:write
+make run-api   # http://localhost:8080
 ```
 
 Open `http://localhost:8080/docs/` for the interactive API reference and use

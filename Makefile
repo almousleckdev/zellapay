@@ -1,4 +1,9 @@
-.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate migrate
+# Local settings. Create them once with `make env`; every target below
+# then sees them. Do not put comments after a value in .env.local.
+-include .env.local
+.EXPORT_ALL_VARIABLES:
+
+.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate migrate env
 
 build:
 	go build -o bin/ ./cmd/...
@@ -33,6 +38,9 @@ up:
 
 down:
 	docker compose down
+
+env:
+	./scripts/init-env.sh
 
 migrate:
 	go run ./cmd/migrate up

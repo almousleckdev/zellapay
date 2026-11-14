@@ -17,6 +17,8 @@ type Repository interface {
 	GetMerchant(ctx context.Context, id string) (Merchant, error)
 	SetStatus(ctx context.Context, id string, s Status, now time.Time) error
 	FeeBPS(ctx context.Context, id string) (int, error)
+	PayoutFeeBPS(ctx context.Context, id string) (int, error)
+	SetPayoutFeeBPS(ctx context.Context, id string, bps int, now time.Time) error
 	SetFeeBPS(ctx context.Context, id string, bps int, now time.Time) error
 	InsertKey(ctx context.Context, k APIKey) error
 	KeyByLookup(ctx context.Context, lookupID string) (StoredKey, error)

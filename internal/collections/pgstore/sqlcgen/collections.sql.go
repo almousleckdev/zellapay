@@ -328,6 +328,57 @@ func (q *Queries) ListDueCollections(ctx context.Context, arg ListDueCollections
 	return items, nil
 }
 
+const listUnsettledCollections = `-- name: ListUnsettledCollections :many
+SELECT id, merchant_id, amount, currency, fee_amount, completed_at
+  FROM collections
+ WHERE status = 'succeeded'
+   AND settled_at IS NULL
+   AND completed_at <= $1
+ ORDER BY completed_at
+ LIMIT $2
+`
+
+type ListUnsettledCollectionsParams struct {
+	Before    pgtype.Timestamptz
+	BatchSize int32
+}
+
+type ListUnsettledCollectionsRow struct {
+	ID          string
+	MerchantID  string
+	Amount      int64
+	Currency    string
+	FeeAmount   int64
+	CompletedAt pgtype.Timestamptz
+}
+
+func (q *Queries) ListUnsettledCollections(ctx context.Context, arg ListUnsettledCollectionsParams) ([]ListUnsettledCollectionsRow, error) {
+	rows, err := q.db.Query(ctx, listUnsettledCollections, arg.Before, arg.BatchSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUnsettledCollectionsRow
+	for rows.Next() {
+		var i ListUnsettledCollectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MerchantID,
+			&i.Amount,
+			&i.Currency,
+			&i.FeeAmount,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockCollection = `-- name: LockCollection :one
 SELECT id, merchant_id, idempotency_key, merchant_reference, status, amount,
        currency, fee_amount, customer_phone_idx, customer_phone_masked,
@@ -383,6 +434,22 @@ func (q *Queries) LockCollection(ctx context.Context, id string) (LockCollection
 		&i.NextCheckAt,
 	)
 	return i, err
+}
+
+const markCollectionSettled = `-- name: MarkCollectionSettled :exec
+UPDATE collections
+   SET settled_at = $1
+ WHERE id = $2 AND status = 'succeeded' AND settled_at IS NULL
+`
+
+type MarkCollectionSettledParams struct {
+	SettledAt pgtype.Timestamptz
+	ID        string
+}
+
+func (q *Queries) MarkCollectionSettled(ctx context.Context, arg MarkCollectionSettledParams) error {
+	_, err := q.db.Exec(ctx, markCollectionSettled, arg.SettledAt, arg.ID)
+	return err
 }
 
 const updateCollection = `-- name: UpdateCollection :exec

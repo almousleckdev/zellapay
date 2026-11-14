@@ -64,7 +64,7 @@ func newEnv(t *testing.T) *env {
 	}
 	e := &env{t: t, c: c, clock: clk}
 	e.main = e.newAccount(150, merchants.ScopeRead, merchants.ScopeCollectionsWrite,
-		merchants.ScopeWebhooksWrite)
+		merchants.ScopeWebhooksWrite, merchants.ScopePayoutsWrite)
 	e.reader = account{
 		merchant: e.main.merchant,
 		key:      e.issue(e.main.merchant, merchants.ScopeRead),
@@ -81,7 +81,9 @@ func settings() wiring.Settings {
 		DatabaseURL: testDSN, RedisURL: testRedis,
 		DataKeyID: "k1", DataKey: secret(7), BlindIndexKey: secret(9),
 		SimulatorEnabled: true, SimulatorSecret: secret(5), SimulatorPrefix: "+241",
-		WebhookPolicy: webhooks.Policy{AllowPrivate: true, AllowHTTP: true},
+		WebhookPolicy:   webhooks.Policy{AllowPrivate: true, AllowHTTP: true},
+		SettlementDelay: 24 * time.Hour,
+		PayoutMaxAmount: 5_000_000,
 	}
 }
 
@@ -196,3 +198,7 @@ func (e *env) get(path, key string) response {
 func (e *env) post(path, key, idemKey, body string) response {
 	return e.do(request{method: "POST", path: path, key: key, idemKey: idemKey, body: body})
 }
+
+type jsonRaw = json.RawMessage
+
+func unmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }

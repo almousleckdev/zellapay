@@ -8,6 +8,8 @@ import (
 
 	"github.com/zellapay/zellapay/internal/collections"
 	collectionsapi "github.com/zellapay/zellapay/internal/collections/httpapi"
+	"github.com/zellapay/zellapay/internal/payouts"
+	payoutsapi "github.com/zellapay/zellapay/internal/payouts/httpapi"
 	"github.com/zellapay/zellapay/internal/webhooks"
 )
 
@@ -51,4 +53,43 @@ func (s collectionSource) Object(
 	}
 	raw, err := collectionsapi.PublicJSON(c)
 	return c.MerchantID, raw, err
+}
+
+// payoutFeed lets the webhooks module read the payouts outbox.
+type payoutFeed struct{ svc *payouts.Service }
+
+var _ webhooks.Feed = payoutFeed{}
+
+func (f payoutFeed) Claim(
+	ctx context.Context, now time.Time, limit int, handle webhooks.ClaimHandler,
+) (int, error) {
+	return f.svc.ClaimOutbox(ctx, now, limit,
+		func(ctx context.Context, entries []payouts.OutboxEntry) error {
+			out := make([]webhooks.OutboxEntry, len(entries))
+			for i, e := range entries {
+				out[i] = webhooks.OutboxEntry{
+					ID: e.ID, ObjectID: e.PayoutID, Type: e.EventType, CreatedAt: e.CreatedAt,
+				}
+			}
+			return handle(ctx, out)
+		})
+}
+
+// payoutSource describes a payout exactly as the merchant API does.
+type payoutSource struct{ svc *payouts.Service }
+
+var _ webhooks.PayloadSource = payoutSource{}
+
+func (s payoutSource) Object(
+	ctx context.Context, e webhooks.OutboxEntry,
+) (string, json.RawMessage, error) {
+	p, err := s.svc.Get(ctx, e.ObjectID)
+	if errors.Is(err, payouts.ErrNotFound) {
+		return "", nil, webhooks.ErrNotFound
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	raw, err := payoutsapi.PublicJSON(p)
+	return p.MerchantID, raw, err
 }

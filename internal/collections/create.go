@@ -8,6 +8,7 @@ import (
 
 	"github.com/zellapay/zellapay/internal/operators/router"
 	"github.com/zellapay/zellapay/internal/platform/ids"
+	"github.com/zellapay/zellapay/internal/platform/money"
 	"github.com/zellapay/zellapay/internal/platform/phone"
 )
 
@@ -71,7 +72,11 @@ func (s *Service) feeFor(ctx context.Context, in CreateInput) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("merchant terms: %w", err)
 	}
-	return ComputeFee(in.Amount, bps)
+	fee, err := money.Fee(in.Amount, bps)
+	if err != nil {
+		return 0, fmt.Errorf("%w: fee", ErrInvalidInput)
+	}
+	return fee, nil
 }
 
 func (s *Service) newCollection(in CreateInput, fee int64, operator string) NewCollection {
@@ -80,7 +85,7 @@ func (s *Service) newCollection(in CreateInput, fee int64, operator string) NewC
 	return NewCollection{
 		Phone: in.Phone,
 		Collection: Collection{
-			ID:                ids.New("col_"),
+			ID:                ids.New(idPrefix),
 			MerchantID:        in.MerchantID,
 			IdempotencyKey:    in.IdempotencyKey,
 			MerchantReference: in.Reference,

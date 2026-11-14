@@ -24,5 +24,4 @@ func (h *Handler) Mount(mux *http.ServeMux, g Guards) {
 		httpx.Chain(http.HandlerFunc(h.List), g.Authenticate, g.Read))
 	mux.Handle("GET /v1/collections/{id}",
 		httpx.Chain(http.HandlerFunc(h.Get), g.Authenticate, g.Read))
-	mux.HandleFunc("POST /callbacks/{operator}", h.Callback)
 }

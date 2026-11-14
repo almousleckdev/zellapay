@@ -40,7 +40,7 @@ func TestSpecBuildsWithAllReferencesResolved(t *testing.T) {
 	if m.Paths == nil || m.Paths.PathItems.Len() == 0 {
 		t.Fatal("no paths resolved")
 	}
-	if m.Webhooks == nil || m.Webhooks.Len() != 6 {
-		t.Fatalf("want 6 webhooks, got %v", m.Webhooks)
+	if m.Webhooks == nil || m.Webhooks.Len() != 5 {
+		t.Fatalf("want 5 webhooks, got %v", m.Webhooks)
 	}
 }

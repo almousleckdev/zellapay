@@ -53,3 +53,11 @@ SELECT fee_bps FROM merchants WHERE id = @id;
 UPDATE merchants
    SET fee_bps = @fee_bps, updated_at = @now
  WHERE id = @id;
+
+-- name: GetMerchantPayoutFeeBPS :one
+SELECT payout_fee_bps FROM merchants WHERE id = @id;
+
+-- name: SetMerchantPayoutFeeBPS :execrows
+UPDATE merchants
+   SET payout_fee_bps = @fee_bps, updated_at = @now
+ WHERE id = @id;

@@ -14,7 +14,6 @@ type Service interface {
 	Create(ctx context.Context, in collections.CreateInput) (collections.Collection, error)
 	Get(ctx context.Context, id string) (collections.Collection, error)
 	List(ctx context.Context, q collections.ListQuery) (collections.Page, error)
-	HandleCallback(ctx context.Context, operator string, r *http.Request) error
 }
 
 // MerchantFunc returns the authenticated merchant of a request.
