@@ -21,6 +21,7 @@ const usage = `usage:
   zellactl merchant fee <merchant-id> <basis-points>
   zellactl merchant payout-fee <merchant-id> <basis-points>
   zellactl key issue <merchant-id> <scope[,scope...]>
+  zellactl notify test <email>     queue and send a test email (see MailDev)
 
 scopes: read, collections:write, payouts:write, webhooks:write
 environment: ZP_DATABASE_URL (required), ZP_ENV (must not be production)`
@@ -35,6 +36,9 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	if os.Getenv("ZP_ENV") == "production" {
 		return fmt.Errorf("refusing to run in production")
+	}
+	if len(args) > 0 && args[0] == "notify" {
+		return notifyCommand(ctx, args[1:])
 	}
 	dsn := os.Getenv("ZP_DATABASE_URL")
 	if dsn == "" {

@@ -67,8 +67,8 @@ when it does. Before relying on a sibling path, check that it exists with
 | Other `/v1` endpoints (refunds, balance, operators) | In the contract, handlers not built |
 | Ledger, merchants, API keys, idempotency, simulator | Built and tested |
 | Collections (state machine, ledger posting, operator confirmation, recovery sweeper) | Built and tested |
-| `/dashboard` and `/admin` backend routes | Not designed yet |
-| Dashboard and admin authentication (people, MFA, roles) | Not designed yet |
+| `/dashboard` and `/admin` backend routes | Designed (docs/design/11), not built |
+| Dashboard and admin authentication (people, MFA, roles) | Designed (docs/design/08 to 11), awaiting review |
 | `zellamerchant`, `zellapayadmin`, `zellaweb` | Scaffolded with docs, no features |
 
 Do not build frontend screens that depend on a route group whose contract does

@@ -42,6 +42,16 @@ type Settings struct {
 	// pay them out. PayoutMaxAmount caps a single payout, in the smallest unit.
 	SettlementDelay time.Duration
 	PayoutMaxAmount int64
+
+	// Mail. Outside production, email goes to a local MailDev and SMS is
+	// written to the log. Production needs a real mail server, always with
+	// TLS, and has no SMS gateway until one is chosen.
+	SMTPAddr       string
+	MailFrom       string
+	SMTPUsername   string
+	SMTPPassword   string
+	SMTPRequireTLS bool
+	SMSLogOnly     bool
 }
 
 // SettingsFromEnv reads and validates the settings. The error names the
@@ -66,7 +76,7 @@ func SettingsFromEnv() (Settings, error) {
 	errs = append(errs, err)
 	s.BlindIndexKey, err = secretFromEnv("ZP_BLIND_INDEX_KEY")
 	errs = append(errs, err)
-	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits())
+	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits(), s.loadMail())
 	if err := errors.Join(errs...); err != nil {
 		return Settings{}, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -102,7 +112,43 @@ func (s Settings) Validate() error {
 	if s.SettlementDelay < 0 {
 		errs = append(errs, errors.New("SettlementDelay: must not be negative"))
 	}
+	if s.SMTPAddr == "" || s.MailFrom == "" {
+		errs = append(errs, errors.New("SMTPAddr and MailFrom: required"))
+	}
 	return errors.Join(errs...)
+}
+
+func (s *Settings) loadMail() error {
+	prod := s.Environment == "production"
+	s.SMTPAddr = os.Getenv("ZP_SMTP_ADDR")
+	s.MailFrom = os.Getenv("ZP_MAIL_FROM")
+	s.SMTPUsername = os.Getenv("ZP_SMTP_USERNAME")
+	s.SMTPPassword = os.Getenv("ZP_SMTP_PASSWORD")
+	s.SMSLogOnly = !prod
+	if !prod {
+		s.SMTPAddr = getenv("ZP_SMTP_ADDR", "127.0.0.1:1026")
+		s.MailFrom = getenv("ZP_MAIL_FROM", "ZellaPay <no-reply@zellapay.test>")
+	}
+	tls, err := strconv.ParseBool(getenv("ZP_SMTP_REQUIRE_TLS", strconv.FormatBool(prod)))
+	if err != nil {
+		return errors.New("ZP_SMTP_REQUIRE_TLS: not a boolean")
+	}
+	s.SMTPRequireTLS = tls
+	if !prod {
+		return nil
+	}
+	return errors.Join(
+		require("ZP_SMTP_ADDR", s.SMTPAddr),
+		require("ZP_MAIL_FROM", s.MailFrom),
+		requireTrue("ZP_SMTP_REQUIRE_TLS", tls, "production email must use TLS"),
+	)
+}
+
+func requireTrue(name string, ok bool, why string) error {
+	if ok {
+		return nil
+	}
+	return fmt.Errorf("%s: %s", name, why)
 }
 
 func (s *Settings) loadLimits() error {

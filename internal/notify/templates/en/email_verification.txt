@@ -1,0 +1,12 @@
+Subject: Confirm your ZellaPay email address
+
+Hello,
+
+To confirm your email address, open this link:
+{{.link}}
+
+The link is valid for {{.hours}} hours and can be used only once.
+
+If you did not create a ZellaPay account, ignore this message.
+
+The ZellaPay team

@@ -117,6 +117,23 @@ type MerchantApiKey struct {
 	RevokedAt   pgtype.Timestamptz
 }
 
+type Notification struct {
+	ID              string
+	Channel         string
+	Template        string
+	Locale          string
+	RecipientMasked string
+	PayloadEnc      string
+	DedupeKey       pgtype.Text
+	Status          string
+	Attempts        int32
+	NextAttemptAt   pgtype.Timestamptz
+	RetryUntil      pgtype.Timestamptz
+	LastError       string
+	CreatedAt       pgtype.Timestamptz
+	SentAt          pgtype.Timestamptz
+}
+
 type Payout struct {
 	ID                   string
 	MerchantID           string

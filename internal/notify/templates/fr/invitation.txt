@@ -1,0 +1,14 @@
+Subject: Invitation à rejoindre {{.business}} sur ZellaPay
+
+Bonjour,
+
+Vous avez été invité(e) à rejoindre {{.business}} sur ZellaPay.
+
+Pour créer votre compte, ouvrez ce lien :
+{{.link}}
+
+Ce lien est valable {{.days}} jours et ne peut servir qu'une seule fois.
+
+Si vous n'attendiez pas cette invitation, ignorez simplement ce message.
+
+L'équipe ZellaPay

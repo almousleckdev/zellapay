@@ -82,6 +82,9 @@ func settings() wiring.Settings {
 		DataKeyID: "k1", DataKey: secret(7), BlindIndexKey: secret(9),
 		SimulatorEnabled: true, SimulatorSecret: secret(5), SimulatorPrefix: "+241",
 		WebhookPolicy:   webhooks.Policy{AllowPrivate: true, AllowHTTP: true},
+		SMTPAddr:        "127.0.0.1:1026",
+		MailFrom:        "ZellaPay <no-reply@zellapay.test>",
+		SMSLogOnly:      true,
 		SettlementDelay: 24 * time.Hour,
 		PayoutMaxAmount: 5_000_000,
 	}

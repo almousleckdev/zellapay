@@ -15,6 +15,8 @@ import (
 	ledgerstore "github.com/zellapay/zellapay/internal/ledger/pgstore"
 	"github.com/zellapay/zellapay/internal/merchants"
 	merchantstore "github.com/zellapay/zellapay/internal/merchants/pgstore"
+	"github.com/zellapay/zellapay/internal/notify"
+	notifystore "github.com/zellapay/zellapay/internal/notify/pgstore"
 	"github.com/zellapay/zellapay/internal/operators"
 	"github.com/zellapay/zellapay/internal/operators/router"
 	"github.com/zellapay/zellapay/internal/operators/simulator"
@@ -48,6 +50,8 @@ type Container struct {
 	Payouts     *payouts.Service
 	Webhooks    *webhooks.Service
 	Callbacks   *callbacks.Dispatcher
+	Notify      *notify.Service
+	NotifyStore *notifystore.Store
 	Idempotency idempotency.Store
 	// Simulator is set only when enabled. It keeps state in memory, so it is
 	// usable from the process that built it, not from a separate worker.
@@ -131,6 +135,9 @@ func (c *Container) assemble(log *slog.Logger) error {
 		Router: rt, Ledger: led, Accounts: led, Clock: c.Clock, Log: log,
 	}, payoutCfg)
 	c.Callbacks = callbacks.New(rt, c.Collections, c.Payouts)
+	if c.Notify, c.NotifyStore, err = c.buildNotify(sealer, log); err != nil {
+		return err
+	}
 	c.Webhooks = c.buildWebhooks(sealer, log)
 	c.Idempotency = c.buildIdempotency(log)
 	return nil

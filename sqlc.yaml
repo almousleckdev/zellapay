@@ -48,3 +48,11 @@ sql:
         package: sqlcgen
         out: internal/payouts/pgstore/sqlcgen
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/notify
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/notify/pgstore/sqlcgen
+        sql_package: pgx/v5

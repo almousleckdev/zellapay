@@ -15,6 +15,8 @@ func setEnv(t *testing.T, kv map[string]string) {
 		"ZP_ENV", "ZP_DATABASE_URL", "ZP_REDIS_URL", "ZP_DATA_KEY", "ZP_DATA_KEY_ID",
 		"ZP_BLIND_INDEX_KEY", "ZP_SIMULATOR_ENABLED", "ZP_SIMULATOR_SECRET", "ZP_SIMULATOR_PREFIX",
 		"ZP_WEBHOOKS_ALLOW_PRIVATE", "ZP_SETTLEMENT_DELAY", "ZP_PAYOUT_MAX_AMOUNT",
+		"ZP_SMTP_ADDR", "ZP_MAIL_FROM", "ZP_SMTP_USERNAME", "ZP_SMTP_PASSWORD",
+		"ZP_SMTP_REQUIRE_TLS",
 	} {
 		t.Setenv(name, "")
 	}
@@ -44,8 +46,7 @@ func TestLocalDefaultsEnableTheSimulatorInTestMode(t *testing.T) {
 }
 
 func TestProductionIsLiveModeAndRefusesTheSimulator(t *testing.T) {
-	env := valid()
-	env["ZP_ENV"] = "production"
+	env := productionMail()
 	setEnv(t, env)
 	s, err := SettingsFromEnv()
 	if err != nil || s.Mode != "live" || s.SimulatorEnabled {
@@ -87,8 +88,7 @@ func TestShortSecretsAreRejected(t *testing.T) {
 }
 
 func TestWebhookDestinationsAreStrictInProduction(t *testing.T) {
-	env := valid()
-	env["ZP_ENV"] = "production"
+	env := productionMail()
 	setEnv(t, env)
 	s, err := SettingsFromEnv()
 	if err != nil || s.WebhookPolicy.AllowPrivate || s.WebhookPolicy.AllowHTTP {
@@ -135,17 +135,84 @@ func TestLimitsDefaultToSafeValuesAndAreValidated(t *testing.T) {
 }
 
 func TestHandBuiltSettingsCannotSilentlyRefuseEveryPayout(t *testing.T) {
-	good := Settings{PayoutMaxAmount: 1, SettlementDelay: 0}
-	if err := good.Validate(); err != nil {
+	base := Settings{PayoutMaxAmount: 1, SMTPAddr: "h:25", MailFrom: "a@b.com"}
+	if err := base.Validate(); err != nil {
 		t.Fatalf("an immediate settlement is allowed: %v", err)
 	}
+	with := func(change func(*Settings)) Settings {
+		s := base
+		change(&s)
+		return s
+	}
 	for name, s := range map[string]Settings{
-		"zero cap":       {PayoutMaxAmount: 0},
-		"negative cap":   {PayoutMaxAmount: -5},
-		"negative delay": {PayoutMaxAmount: 1, SettlementDelay: -time.Second},
+		"zero cap":       with(func(s *Settings) { s.PayoutMaxAmount = 0 }),
+		"negative cap":   with(func(s *Settings) { s.PayoutMaxAmount = -5 }),
+		"negative delay": with(func(s *Settings) { s.SettlementDelay = -time.Second }),
+		"no mail server": with(func(s *Settings) { s.SMTPAddr = "" }),
+		"no mail sender": with(func(s *Settings) { s.MailFrom = "" }),
 	} {
 		if err := s.Validate(); err == nil {
 			t.Errorf("%s must be rejected", name)
 		}
+	}
+}
+
+func TestDevelopmentMailGoesToMailDevAndSMSToTheLog(t *testing.T) {
+	setEnv(t, valid())
+	s, err := SettingsFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.SMTPAddr != "127.0.0.1:1026" || !strings.Contains(s.MailFrom, "zellapay.test") ||
+		s.SMTPRequireTLS || !s.SMSLogOnly {
+		t.Fatalf("unexpected development mail settings: %+v", s)
+	}
+}
+
+func productionMail() map[string]string {
+	env := valid()
+	env["ZP_ENV"] = "production"
+	env["ZP_SMTP_ADDR"] = "smtp.mail.example:587"
+	env["ZP_MAIL_FROM"] = "ZellaPay <no-reply@zellapay.example>"
+	return env
+}
+
+func TestProductionMailNeedsARealServerAndAlwaysUsesTLS(t *testing.T) {
+	setEnv(t, productionMail())
+	s, err := SettingsFromEnv()
+	if err != nil || !s.SMTPRequireTLS || s.SMSLogOnly {
+		t.Fatalf("a valid production setup must pass: %+v, %v", s, err)
+	}
+	for name, mutate := range map[string]func(map[string]string){
+		"no server":      func(e map[string]string) { delete(e, "ZP_SMTP_ADDR") },
+		"no sender":      func(e map[string]string) { delete(e, "ZP_MAIL_FROM") },
+		"TLS turned off": func(e map[string]string) { e["ZP_SMTP_REQUIRE_TLS"] = "false" },
+	} {
+		env := productionMail()
+		mutate(env)
+		setEnv(t, env)
+		if _, err := SettingsFromEnv(); err == nil || !strings.Contains(err.Error(), "ZP_") {
+			t.Errorf("%s must be refused, got %v", name, err)
+		}
+	}
+}
+
+func TestProductionNeverFallsBackToTheDevelopmentMailServer(t *testing.T) {
+	env := valid()
+	env["ZP_ENV"] = "production"
+	setEnv(t, env)
+	_, err := SettingsFromEnv()
+	if err == nil || !strings.Contains(err.Error(), "ZP_SMTP_ADDR") {
+		t.Fatalf("production must not default to MailDev, got %v", err)
+	}
+}
+
+func TestMailPasswordsAreNeverEchoedInErrors(t *testing.T) {
+	env := productionMail()
+	env["ZP_SMTP_PASSWORD"] = "hunter2-very-secret"
+	env["ZP_SMTP_REQUIRE_TLS"] = "false"
+	setEnv(t, env)
+	if _, err := SettingsFromEnv(); err == nil || strings.Contains(err.Error(), "hunter2") {
+		t.Fatalf("got %v", err)
 	}
 }

@@ -140,7 +140,7 @@ Report vulnerabilities privately to the security contact in `SECURITY.md`.
 Requires Go 1.27 and Docker.
 
 ```bash
-make up        # PostgreSQL (:5433) and Redis (:6380), localhost only
+make up        # PostgreSQL (:5433), Redis (:6380) and MailDev (:1081), localhost only
 make env       # creates .env.local with fresh secrets (once; never overwrites)
 make migrate   # applies the database migrations
 go run ./cmd/zellactl merchant create "My Shop" XAF
@@ -150,6 +150,9 @@ go run ./cmd/zellactl merchant payout-fee <merchant-id> 100   # payout fee, basi
 go run ./cmd/zellactl key issue <merchant-id> read,collections:write,payouts:write,webhooks:write
 make run-api   # http://localhost:8080
 ```
+
+To see email working, run `go run ./cmd/zellactl notify test you@example.test`
+and open the MailDev inbox at <http://localhost:1081>.
 
 Open `http://localhost:8080/docs/` for the interactive API reference and use
 the issued key as the bearer token. The sandbox simulates the operator:

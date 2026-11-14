@@ -1,0 +1,10 @@
+Subject: New sign-in to your ZellaPay account
+
+Hello,
+
+Your account was signed in to on {{.when}} from: {{.device}}.
+
+If this was you, there is nothing to do. If not, change your password
+immediately and contact ZellaPay support.
+
+The ZellaPay team

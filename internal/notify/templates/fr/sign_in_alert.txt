@@ -1,0 +1,10 @@
+Subject: Nouvelle connexion à votre compte ZellaPay
+
+Bonjour,
+
+Une connexion à votre compte a eu lieu le {{.when}} depuis : {{.device}}.
+
+Si c'était vous, vous n'avez rien à faire. Sinon, changez votre mot de passe
+immédiatement et contactez le support ZellaPay.
+
+L'équipe ZellaPay

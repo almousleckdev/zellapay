@@ -15,6 +15,7 @@ const (
 	sweepBatch    = 100
 	sweepInterval = 2 * time.Second
 	webhookBatch  = 100
+	notifyBatch   = 50
 )
 
 // Run drives all background work until ctx ends: the simulator's callbacks
@@ -41,6 +42,7 @@ func (c *Container) Run(ctx context.Context, log *slog.Logger) {
 				lastSweep = now
 			}
 			c.runWebhooks(ctx, log)
+			c.runNotifications(ctx, log)
 		}
 	}
 }
@@ -108,5 +110,16 @@ func (c *Container) settle(ctx context.Context, log *slog.Logger) {
 	}
 	if res.Settled > 0 || res.Failed > 0 {
 		log.Info("settlement", "settled", res.Settled, "failed", res.Failed)
+	}
+}
+
+func (c *Container) runNotifications(ctx context.Context, log *slog.Logger) {
+	res, err := c.Notify.DeliverDue(ctx, notifyBatch)
+	if err != nil {
+		log.Error("notification delivery failed", "err", err)
+		return
+	}
+	if res.Attempted > 0 {
+		log.Info("notifications", "sent", res.Sent, "retrying", res.Retrying, "dead", res.Dead)
 	}
 }

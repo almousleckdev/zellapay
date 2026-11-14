@@ -10,9 +10,18 @@
 | `zellapay` api | 8080 |
 | PostgreSQL (compose) | 5433 |
 | Redis (compose) | 6380 |
+| MailDev SMTP (compose) | 1026 |
+| MailDev inbox (compose) | 1081 |
 
 The database and cache use non-default ports on purpose so they do not clash
 with other projects on the same machine. Both bind to `127.0.0.1` only.
+
+## Email in development
+
+Every email the application sends in development lands in MailDev, and nothing
+is delivered to a real address. Start it with `make up`, then open the inbox at
+`http://localhost:1081`. SMS messages are written to the application log
+instead. To see it work, run `go run ./cmd/zellactl notify test you@example.test`. See `docs/design/09-identity-authentication.md`.
 
 ## Start the backend
 
