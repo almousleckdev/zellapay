@@ -55,7 +55,7 @@ func (q *Queries) CreateMerchant(ctx context.Context, arg CreateMerchantParams) 
 
 const getAPIKeyByLookup = `-- name: GetAPIKeyByLookup :one
 SELECT k.id, k.merchant_id, k.lookup_id, k.secret_hash, k.mode, k.scopes,
-       k.ip_allowlist, k.created_at, k.expires_at, k.revoked_at,
+       k.ip_allowlist, k.created_at, k.expires_at, k.revoked_at, k.label,
        m.status AS merchant_status
   FROM merchant_api_keys k
   JOIN merchants m ON m.id = k.merchant_id
@@ -73,6 +73,7 @@ type GetAPIKeyByLookupRow struct {
 	CreatedAt      pgtype.Timestamptz
 	ExpiresAt      pgtype.Timestamptz
 	RevokedAt      pgtype.Timestamptz
+	Label          string
 	MerchantStatus string
 }
 
@@ -90,6 +91,7 @@ func (q *Queries) GetAPIKeyByLookup(ctx context.Context, lookupID string) (GetAP
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.RevokedAt,
+		&i.Label,
 		&i.MerchantStatus,
 	)
 	return i, err
@@ -149,10 +151,10 @@ func (q *Queries) GetMerchantPayoutFeeBPS(ctx context.Context, id string) (int32
 const insertAPIKey = `-- name: InsertAPIKey :exec
 INSERT INTO merchant_api_keys
     (id, merchant_id, lookup_id, secret_hash, mode, scopes, ip_allowlist,
-     created_at, expires_at)
+     created_at, expires_at, label)
 VALUES
     ($1, $2, $3, $4, $5, $6,
-     $7, $8, $9)
+     $7, $8, $9, $10)
 `
 
 type InsertAPIKeyParams struct {
@@ -165,6 +167,7 @@ type InsertAPIKeyParams struct {
 	IpAllowlist []netip.Prefix
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
+	Label       string
 }
 
 func (q *Queries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams) error {
@@ -178,13 +181,14 @@ func (q *Queries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams) erro
 		arg.IpAllowlist,
 		arg.CreatedAt,
 		arg.ExpiresAt,
+		arg.Label,
 	)
 	return err
 }
 
 const listAPIKeys = `-- name: ListAPIKeys :many
 SELECT id, merchant_id, lookup_id, mode, scopes, ip_allowlist,
-       created_at, expires_at, revoked_at
+       created_at, expires_at, revoked_at, label
   FROM merchant_api_keys
  WHERE merchant_id = $1
  ORDER BY created_at, id
@@ -200,6 +204,7 @@ type ListAPIKeysRow struct {
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 	RevokedAt   pgtype.Timestamptz
+	Label       string
 }
 
 func (q *Queries) ListAPIKeys(ctx context.Context, merchantID string) ([]ListAPIKeysRow, error) {
@@ -221,6 +226,7 @@ func (q *Queries) ListAPIKeys(ctx context.Context, merchantID string) ([]ListAPI
 			&i.CreatedAt,
 			&i.ExpiresAt,
 			&i.RevokedAt,
+			&i.Label,
 		); err != nil {
 			return nil, err
 		}

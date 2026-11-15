@@ -78,3 +78,17 @@ func TestWhoMayAssignWhichRole(t *testing.T) {
 		t.Error("an invalid role can be assigned")
 	}
 }
+
+func TestPermissionsOfListsWhatARoleHolds(t *testing.T) {
+	for role, granted := range matrix {
+		got := PermissionsOf(role)
+		if len(got) != len(granted) {
+			t.Errorf("%s: %d permissions, want %d", role, len(got), len(granted))
+		}
+		for _, p := range granted {
+			if !slices.Contains(got, p) {
+				t.Errorf("%s is missing %s", role, p)
+			}
+		}
+	}
+}

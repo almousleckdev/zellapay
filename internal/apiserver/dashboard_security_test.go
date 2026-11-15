@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/zellapay/zellapay/internal/identity"
 )
 
 const newDashPhrase = "une phrase de passe différente"
@@ -13,7 +15,12 @@ const newDashPhrase = "une phrase de passe différente"
 // session token and the authenticator secret.
 func (e *env) enrolledSession(t *testing.T) (string, []byte) {
 	t.Helper()
-	m := e.newMember(t)
+	return e.enrolledAs(t, identity.RoleOwner)
+}
+
+func (e *env) enrolledAs(t *testing.T, role identity.Role) (string, []byte) {
+	t.Helper()
+	m := e.newMemberAs(t, role)
 	token := e.login(t, m, dashPhrase).json(t)["session_token"].(string)
 	begin := e.dash("POST", "/dashboard/mfa/enrolment", token, "")
 	secret, err := base32.StdEncoding.WithPadding(base32.NoPadding).

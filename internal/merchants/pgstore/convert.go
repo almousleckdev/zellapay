@@ -18,6 +18,7 @@ type keyRow struct {
 	scopes                    []string
 	allow                     []netip.Prefix
 	created, expires, revoked pgtype.Timestamptz
+	label                     string
 }
 
 func keyFromRow(r keyRow) merchants.APIKey {
@@ -32,6 +33,7 @@ func keyFromRow(r keyRow) merchants.APIKey {
 		CreatedAt:   r.created.Time,
 		ExpiresAt:   timePtr(r.expires),
 		RevokedAt:   timePtr(r.revoked),
+		Label:       r.label,
 	}
 }
 
@@ -46,7 +48,7 @@ func (s *Store) ListKeys(ctx context.Context, merchantID string) ([]merchants.AP
 		keys = append(keys, keyFromRow(keyRow{
 			id: r.ID, merchantID: r.MerchantID, lookupID: r.LookupID,
 			mode: r.Mode, scopes: r.Scopes, allow: r.IpAllowlist,
-			created: r.CreatedAt, expires: r.ExpiresAt, revoked: r.RevokedAt,
+			created: r.CreatedAt, expires: r.ExpiresAt, revoked: r.RevokedAt, label: r.Label,
 		}))
 	}
 	return keys, nil

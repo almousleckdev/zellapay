@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/zellapay/zellapay/internal/audit"
 )
 
 type fakeClock struct{ now time.Time }
@@ -17,6 +19,7 @@ type fakeRepo struct {
 	keys       map[string]APIKey
 	fees       map[string]int
 	payoutFees map[string]int
+	audits     []audit.Pending
 }
 
 func newFakeRepo() *fakeRepo {
@@ -85,7 +88,8 @@ func (r *fakeRepo) SetPayoutFeeBPS(_ context.Context, id string, bps int, _ time
 	return nil
 }
 
-func (r *fakeRepo) InsertKey(_ context.Context, k APIKey) error {
+func (r *fakeRepo) InsertKey(_ context.Context, k APIKey, fx Effects) error {
+	r.audits = append(r.audits, fx.Audit...)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.keys[k.ID] = k
@@ -103,21 +107,25 @@ func (r *fakeRepo) KeyByLookup(_ context.Context, lookup string) (StoredKey, err
 	return StoredKey{}, ErrNotFound
 }
 
-func (r *fakeRepo) RevokeKey(_ context.Context, merchantID, keyID string, now time.Time) error {
+func (r *fakeRepo) RevokeKey(_ context.Context, ref KeyRef, now time.Time, fx Effects) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	keyID := ref.KeyID
 	k, ok := r.keys[keyID]
-	if !ok || k.MerchantID != merchantID || k.RevokedAt != nil {
+	if !ok || k.MerchantID != ref.MerchantID || k.RevokedAt != nil {
 		return ErrNotFound
 	}
 	k.RevokedAt = &now
 	r.keys[keyID] = k
+	r.audits = append(r.audits, fx.Audit...)
 	return nil
 }
 
-func (r *fakeRepo) RotateKey(_ context.Context, old KeyRef, next APIKey, exp time.Time) error {
+func (r *fakeRepo) RotateKey(_ context.Context, rot Rotation, fx Effects) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	old, next, exp := rot.Old, rot.Next, rot.OldExpires
+	r.audits = append(r.audits, fx.Audit...)
 	k, ok := r.keys[old.KeyID]
 	if !ok || k.MerchantID != old.MerchantID {
 		return ErrNotFound

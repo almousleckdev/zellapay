@@ -43,6 +43,18 @@ func Allows(role identity.Role, p Permission) bool {
 	return slices.Contains(rolePermissions[role], p) || slices.Contains(own, p)
 }
 
+// PermissionsOf lists what a role may do. The dashboard shows only these, so
+// the policy stays in one place.
+func PermissionsOf(role identity.Role) []Permission {
+	var held []Permission
+	for _, p := range All() {
+		if Allows(role, p) {
+			held = append(held, p)
+		}
+	}
+	return held
+}
+
 // CanAssign reports whether actor may give target to someone, by invitation
 // or by changing their role. Only an owner creates or changes owners.
 func CanAssign(actor, target identity.Role) bool {

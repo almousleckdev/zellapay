@@ -86,6 +86,8 @@ type currentResponse struct {
 	User    userJSON    `json:"user"`
 	Session sessionJSON `json:"session"`
 	MFA     string      `json:"mfa"`
+	// Permissions are what the user's role allows, for showing the right UI.
+	Permissions []string `json:"permissions"`
 }
 
 type mfaResponse struct {

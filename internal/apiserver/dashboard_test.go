@@ -22,9 +22,15 @@ type member struct {
 
 func (e *env) newMember(t *testing.T) member {
 	t.Helper()
+	return e.newMemberAs(t, identity.RoleOwner)
+}
+
+// newMemberAs creates a user with the given role, through the invitation flow.
+func (e *env) newMemberAs(t *testing.T, role identity.Role) member {
+	t.Helper()
 	email := strings.ToLower(ids.New("jane_")) + "@example.com"
 	inv, err := e.c.Identity.Invite(contextBackground(), identity.InviteInput{
-		MerchantID: e.main.merchant.ID, Email: email, Role: identity.RoleOwner,
+		MerchantID: e.main.merchant.ID, Email: email, Role: role,
 		InvitedBy: audit.Actor{Kind: audit.ActorSystem, ID: "test"},
 	})
 	if err != nil {

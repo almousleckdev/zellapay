@@ -17,6 +17,8 @@ type Service struct {
 	clock clock.Clock
 	rand  io.Reader
 	mode  Mode // the environment this process serves
+	// auditor is optional: only changes that name a person are audited.
+	auditor Auditor
 }
 
 // NewService returns a Service. mode is the environment the process serves:
@@ -64,7 +66,11 @@ func (s *Service) IssueKey(ctx context.Context, spec KeySpec) (IssuedKey, error)
 		return IssuedKey{}, err
 	}
 	key := s.buildKey(spec, parts)
-	if err := s.repo.InsertKey(ctx, key); err != nil {
+	fx, err := s.keyEffects("api_key.created", key, spec.By, nil)
+	if err != nil {
+		return IssuedKey{}, err
+	}
+	if err := s.repo.InsertKey(ctx, key, fx); err != nil {
 		return IssuedKey{}, fmt.Errorf("store key: %w", err)
 	}
 	return IssuedKey{Key: key, Secret: parts.raw()}, nil
@@ -81,11 +87,13 @@ func (s *Service) buildKey(spec KeySpec, p keyParts) APIKey {
 		IPAllowlist: spec.IPAllowlist,
 		CreatedAt:   s.clock.Now(),
 		ExpiresAt:   spec.ExpiresAt,
+		Label:       spec.Label,
 	}
 }
 
 func validateSpec(spec KeySpec) error {
-	if spec.MerchantID == "" || !spec.Mode.Valid() || len(spec.Scopes) == 0 {
+	if spec.MerchantID == "" || !spec.Mode.Valid() || len(spec.Scopes) == 0 ||
+		len(spec.Label) > 64 {
 		return ErrInvalidInput
 	}
 	for _, sc := range spec.Scopes {
@@ -98,5 +106,20 @@ func validateSpec(spec KeySpec) error {
 
 // RevokeKey permanently disables a key.
 func (s *Service) RevokeKey(ctx context.Context, merchantID, keyID string) error {
-	return s.repo.RevokeKey(ctx, merchantID, keyID, s.clock.Now())
+	return s.RevokeKeyRef(ctx, KeyRef{MerchantID: merchantID, KeyID: keyID})
+}
+
+// RevokeKeyRef disables a key. When ref names who is acting, it is audited.
+func (s *Service) RevokeKeyRef(ctx context.Context, ref KeyRef) error {
+	var fx Effects
+	if ref.By != nil {
+		key, err := s.findKey(ctx, ref)
+		if err != nil {
+			return err
+		}
+		if fx, err = s.keyEffects("api_key.revoked", key, ref.By, nil); err != nil {
+			return err
+		}
+	}
+	return s.repo.RevokeKey(ctx, ref, s.clock.Now(), fx)
 }

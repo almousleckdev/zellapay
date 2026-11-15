@@ -39,6 +39,8 @@ tags:
     description: Invitations, email verification and password reset. No session.
   - name: Session
     description: Sign in, second factor and sign out.
+  - name: API keys
+    description: Create, rotate and revoke the merchant's API keys.
   - name: Security
     description: Authenticator enrolment and the user's own sessions.
 paths:
@@ -64,6 +66,12 @@ paths:
     $ref: ./dashboard/security.yaml#/removeMfa
   /dashboard/mfa/recovery-codes:
     $ref: ./dashboard/security.yaml#/regenerateCodes
+  /dashboard/api-keys:
+    $ref: ./dashboard/keys.yaml#/keys
+  /dashboard/api-keys/{key_id}:
+    $ref: ./dashboard/keys.yaml#/key
+  /dashboard/api-keys/{key_id}/rotate:
+    $ref: ./dashboard/keys.yaml#/rotate
   /dashboard/sessions:
     $ref: ./dashboard/security.yaml#/sessions
   /dashboard/sessions/{session_id}:

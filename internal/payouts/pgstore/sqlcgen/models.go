@@ -171,6 +171,7 @@ type MerchantApiKey struct {
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 	RevokedAt   pgtype.Timestamptz
+	Label       string
 }
 
 type MerchantUser struct {

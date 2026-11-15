@@ -28,9 +28,14 @@ func (s *Service) RotateKey(
 		Scopes:      old.Scopes,
 		IPAllowlist: old.IPAllowlist,
 		ExpiresAt:   old.ExpiresAt,
+		Label:       old.Label,
 	}, parts)
-	expires := s.clock.Now().Add(overlap)
-	if err := s.repo.RotateKey(ctx, ref, next, expires); err != nil {
+	fx, err := s.keyEffects("api_key.rotated", next, ref.By, map[string]string{"replaced": old.ID})
+	if err != nil {
+		return IssuedKey{}, err
+	}
+	rot := Rotation{Old: ref, Next: next, OldExpires: s.clock.Now().Add(overlap)}
+	if err := s.repo.RotateKey(ctx, rot, fx); err != nil {
 		return IssuedKey{}, fmt.Errorf("rotate key: %w", err)
 	}
 	return IssuedKey{Key: next, Secret: parts.raw()}, nil

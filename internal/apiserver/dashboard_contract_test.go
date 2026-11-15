@@ -44,11 +44,11 @@ func dashboardOperations(t *testing.T) [][2]string {
 func TestEveryDocumentedDashboardOperationIsServed(t *testing.T) {
 	e := newEnv(t)
 	ops := dashboardOperations(t)
-	if len(ops) != 16 {
-		t.Fatalf("contract has %d operations, the server mounts 16", len(ops))
+	if len(ops) != 20 {
+		t.Fatalf("contract has %d operations, the server mounts 20", len(ops))
 	}
 	for _, op := range ops {
-		path := strings.NewReplacer("{session_id}", "x").Replace(op[1])
+		path := strings.NewReplacer("{session_id}", "x", "{key_id}", "x").Replace(op[1])
 		r := e.dash(op[0], path, "", "{}")
 		if r.status == 404 && r.errorCode(t) == "" || r.status == 405 {
 			t.Errorf("%s %s is documented but not served (%d)", op[0], op[1], r.status)

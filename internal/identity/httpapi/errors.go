@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zellapay/zellapay/internal/access"
+	"github.com/zellapay/zellapay/internal/access/accesshttp"
 	"github.com/zellapay/zellapay/internal/identity"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 )
@@ -28,11 +28,7 @@ var (
 		"The code is incorrect or was already used.")
 	problemExists = problem(http.StatusConflict, "account_exists",
 		"An account already exists for this email.")
-	problemNotFound = problem(http.StatusNotFound, "not_found", "No such session.")
-	problemMFA      = problem(http.StatusForbidden, "mfa_required",
-		"Complete the second factor first.")
-	problemStepUp = problem(http.StatusForbidden, "step_up_required",
-		"Confirm with a recent code to continue.")
+	problemNotFound  = problem(http.StatusNotFound, "not_found", "No such session.")
 	problemForbidden = problem(http.StatusForbidden, "forbidden",
 		"You are not allowed to do this.")
 	problemInternal = problem(http.StatusInternalServerError, "internal_error",
@@ -48,6 +44,10 @@ func (h *Handler) fail(w http.ResponseWriter, r *http.Request, err error) {
 		w.Header().Set("Retry-After", strconv.Itoa(secs))
 		httpx.WriteError(w, r, problem(http.StatusTooManyRequests, "too_many_attempts",
 			"Too many attempts. Try again later."))
+		return
+	}
+	if p, ok := accesshttp.Problem(err); ok {
+		httpx.WriteError(w, r, p)
 		return
 	}
 	if p, ok := mapped(err); ok {
@@ -85,9 +85,6 @@ var knownErrors = []struct {
 	{identity.ErrNotFound, problemNotFound},
 	{identity.ErrMFAAlreadyEnrolled, problemForbidden},
 	{identity.ErrNoEnrolment, problemForbidden},
-	{access.ErrMFARequired, problemMFA},
-	{access.ErrStepUpRequired, problemStepUp},
-	{access.ErrForbidden, problemForbidden},
 }
 
 // safeDetail returns the part of a validation error this codebase wrote,

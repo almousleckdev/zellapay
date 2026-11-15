@@ -3,6 +3,8 @@ package merchants
 import (
 	"net/netip"
 	"time"
+
+	"github.com/zellapay/zellapay/internal/audit"
 )
 
 // APIKey is the stored form of a key. The secret itself is never kept.
@@ -17,6 +19,8 @@ type APIKey struct {
 	CreatedAt   time.Time
 	ExpiresAt   *time.Time
 	RevokedAt   *time.Time
+	// Label is the name the merchant gave the key. It is not a secret.
+	Label string
 }
 
 // IssuedKey is returned once, when a key is created. Secret is the only
@@ -33,6 +37,10 @@ type KeySpec struct {
 	Scopes      []Scope
 	IPAllowlist []netip.Prefix
 	ExpiresAt   *time.Time
+	Label       string
+	// By is who is creating the key. When set, the creation is audited in
+	// the same transaction, which needs the service to have an auditor.
+	By *audit.Actor
 }
 
 // Principal is the authenticated caller of a request.

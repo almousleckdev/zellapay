@@ -11,6 +11,7 @@ import (
 	identityapi "github.com/zellapay/zellapay/internal/identity/httpapi"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/httpauth"
+	"github.com/zellapay/zellapay/internal/merchants/keysapi"
 	payoutsapi "github.com/zellapay/zellapay/internal/payouts/httpapi"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
@@ -86,12 +87,12 @@ func mountPayouts(mux *http.ServeMux, c *wiring.Container, opts Options, log *sl
 	})
 }
 
-// mountDashboard serves the account and security routes of the merchant
-// dashboard. Only the dashboard's own server is meant to call them.
+// mountDashboard serves the routes of the merchant dashboard: account and
+// security, and API keys. Only the dashboard's own server should call them.
 func mountDashboard(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog.Logger) {
-	identityapi.New(identityapi.Deps{
-		Accounts: c.Identity, Sessions: c.Sessions,
-		Policy: access.NewPolicy(access.DefaultConfig()), Clock: c.Clock,
+	policy := access.NewPolicy(access.DefaultConfig())
+	account := identityapi.New(identityapi.Deps{
+		Accounts: c.Identity, Sessions: c.Sessions, Policy: policy, Clock: c.Clock,
 		ClientIP: func(r *http.Request) string {
 			if addr := opts.ClientIP(r); addr.IsValid() {
 				return addr.String()
@@ -99,5 +100,10 @@ func mountDashboard(mux *http.ServeMux, c *wiring.Container, opts Options, log *
 			return ""
 		},
 		Log: log,
-	}).Mount(mux)
+	})
+	account.Mount(mux)
+	keysapi.New(keysapi.Deps{
+		Keys: c.Merchants, Policy: policy, Clock: c.Clock, Mode: c.Settings.Mode,
+		Principal: identityapi.PrincipalFrom, Log: log,
+	}).Mount(mux, account.RequireSession)
 }

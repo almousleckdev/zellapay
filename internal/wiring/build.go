@@ -126,7 +126,11 @@ func (c *Container) assemble(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	c.Merchants = merchants.NewService(merchantstore.New(c.Pool), c.Clock, c.Settings.Mode)
+	c.AuditStore = auditstore.New(c.Pool)
+	c.Audit = audit.NewService(c.AuditStore, c.Clock)
+	c.Merchants = merchants.NewService(
+		merchantstore.New(c.Pool).WithAudit(c.AuditStore), c.Clock, c.Settings.Mode,
+	).WithAuditor(c.Audit)
 	led := ledgerstore.New(c.Pool)
 	collectionCfg := collections.DefaultConfig()
 	collectionCfg.SettlementDelay = c.Settings.SettlementDelay
@@ -154,8 +158,6 @@ func (c *Container) assemble(log *slog.Logger) error {
 // buildPeople builds the services that tell and identify people: the audit
 // log, email and SMS, and users. Identity needs the other two.
 func (c *Container) buildPeople(sec secrets, log *slog.Logger) error {
-	c.AuditStore = auditstore.New(c.Pool)
-	c.Audit = audit.NewService(c.AuditStore, c.Clock)
 	var err error
 	if c.Notify, c.NotifyStore, err = c.buildNotify(sec.sealer, log); err != nil {
 		return err

@@ -17,6 +17,13 @@ type caller struct {
 	Token string
 }
 
+// PrincipalFrom returns who the session in the request belongs to. Other
+// route groups behind RequireSession use it to find the user and merchant.
+func PrincipalFrom(ctx context.Context) (identity.Principal, bool) {
+	c, ok := callerFrom(ctx)
+	return c.Principal, ok
+}
+
 func callerFrom(ctx context.Context) (caller, bool) {
 	c, ok := ctx.Value(ctxKey{}).(caller)
 	return c, ok

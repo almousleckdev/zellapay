@@ -3,6 +3,8 @@ package httpapi
 import (
 	"net/http"
 
+	"github.com/zellapay/zellapay/internal/access"
+
 	"github.com/zellapay/zellapay/internal/identity"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 )
@@ -29,8 +31,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // Current describes the signed-in user and what their session still needs.
 func (h *Handler) Current(w http.ResponseWriter, r *http.Request) {
 	c, _ := callerFrom(r.Context())
+	perms := access.PermissionsOf(c.User.Role)
+	names := make([]string, len(perms))
+	for i, p := range perms {
+		names[i] = string(p)
+	}
 	httpx.WriteJSON(w, http.StatusOK, currentResponse{
 		User: userView(c.User), Session: sessionView(c.Session, c.Session.ID), MFA: string(c.MFA),
+		Permissions: names,
 	})
 }
 

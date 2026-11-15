@@ -1,0 +1,110 @@
+keys:
+  get:
+    tags: [API keys]
+    operationId: listApiKeys
+    summary: List your API keys
+    description: Never includes secrets. Needs the `apikeys:read` permission.
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: The merchant's keys, oldest first.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/ApiKeyList
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+  post:
+    tags: [API keys]
+    operationId: createApiKey
+    summary: Create an API key
+    description: |
+      The key belongs to the signed-in user's merchant and works in this
+      deployment's mode only. A key may carry only scopes its creator could
+      use themselves: a developer cannot mint a `payouts:write` key.
+      The secret is returned once. Needs a recent second factor.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/CreateApiKey
+    responses:
+      '201':
+        description: The key and its secret, shown only now.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/IssuedApiKey
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+rotate:
+  parameters:
+    - name: key_id
+      in: path
+      required: true
+      schema:
+        type: string
+  post:
+    tags: [API keys]
+    operationId: rotateApiKey
+    summary: Rotate an API key
+    description: |
+      Issues a replacement with the same scopes and label. The old key keeps
+      working for the overlap (default 24 hours, at most 7 days) so
+      integrations can switch without downtime. Needs a recent second factor.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/RotateApiKey
+    responses:
+      '201':
+        description: The replacement key and its secret, shown only now.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/IssuedApiKey
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+      '404':
+        $ref: ./responses.yaml#/NotFound
+key:
+  parameters:
+    - name: key_id
+      in: path
+      required: true
+      schema:
+        type: string
+  delete:
+    tags: [API keys]
+    operationId: revokeApiKey
+    summary: Revoke an API key
+    description: Disables the key at once. Needs a recent second factor.
+    security:
+      - sessionAuth: []
+    responses:
+      '204':
+        description: The key is revoked.
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+      '404':
+        $ref: ./responses.yaml#/NotFound

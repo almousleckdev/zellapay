@@ -16,14 +16,14 @@ UPDATE merchants
 -- name: InsertAPIKey :exec
 INSERT INTO merchant_api_keys
     (id, merchant_id, lookup_id, secret_hash, mode, scopes, ip_allowlist,
-     created_at, expires_at)
+     created_at, expires_at, label)
 VALUES
     (@id, @merchant_id, @lookup_id, @secret_hash, @mode, @scopes,
-     @ip_allowlist, @created_at, @expires_at);
+     @ip_allowlist, @created_at, @expires_at, @label);
 
 -- name: GetAPIKeyByLookup :one
 SELECT k.id, k.merchant_id, k.lookup_id, k.secret_hash, k.mode, k.scopes,
-       k.ip_allowlist, k.created_at, k.expires_at, k.revoked_at,
+       k.ip_allowlist, k.created_at, k.expires_at, k.revoked_at, k.label,
        m.status AS merchant_status
   FROM merchant_api_keys k
   JOIN merchants m ON m.id = k.merchant_id
@@ -41,7 +41,7 @@ UPDATE merchant_api_keys
 
 -- name: ListAPIKeys :many
 SELECT id, merchant_id, lookup_id, mode, scopes, ip_allowlist,
-       created_at, expires_at, revoked_at
+       created_at, expires_at, revoked_at, label
   FROM merchant_api_keys
  WHERE merchant_id = @merchant_id
  ORDER BY created_at, id;

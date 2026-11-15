@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/zellapay/zellapay/internal/audit"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/pgstore/sqlcgen"
 	"github.com/zellapay/zellapay/internal/platform/pgconv"
@@ -22,10 +23,22 @@ var (
 
 // Store implements merchants.Repository on PostgreSQL.
 type Store struct {
-	pool *pgxpool.Pool
+	pool  *pgxpool.Pool
+	audit AuditLog
 }
 
 var _ merchants.Repository = (*Store)(nil)
+
+// AuditLog appends an audit entry inside a transaction.
+type AuditLog interface {
+	AppendIn(ctx context.Context, tx pgx.Tx, p audit.Pending) (audit.Record, error)
+}
+
+// WithAudit lets key changes that name a person be audited atomically.
+func (s *Store) WithAudit(a AuditLog) *Store {
+	s.audit = a
+	return s
+}
 
 // New returns a Store backed by pool.
 func New(pool *pgxpool.Pool) *Store { return &Store{pool: pool} }
