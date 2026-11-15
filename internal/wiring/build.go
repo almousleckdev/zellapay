@@ -9,9 +9,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/zellapay/zellapay/internal/audit"
+	auditstore "github.com/zellapay/zellapay/internal/audit/pgstore"
 	"github.com/zellapay/zellapay/internal/callbacks"
 	"github.com/zellapay/zellapay/internal/collections"
 	collectionstore "github.com/zellapay/zellapay/internal/collections/pgstore"
+	"github.com/zellapay/zellapay/internal/identity"
 	ledgerstore "github.com/zellapay/zellapay/internal/ledger/pgstore"
 	"github.com/zellapay/zellapay/internal/merchants"
 	merchantstore "github.com/zellapay/zellapay/internal/merchants/pgstore"
@@ -51,6 +54,11 @@ type Container struct {
 	Webhooks    *webhooks.Service
 	Callbacks   *callbacks.Dispatcher
 	Notify      *notify.Service
+	Identity    *identity.Service
+	MFA         *identity.MFA
+	Sessions    *identity.Sessions
+	Audit       *audit.Service
+	AuditStore  *auditstore.Store
 	NotifyStore *notifystore.Store
 	Idempotency idempotency.Store
 	// Simulator is set only when enabled. It keeps state in memory, so it is
@@ -135,12 +143,24 @@ func (c *Container) assemble(log *slog.Logger) error {
 		Router: rt, Ledger: led, Accounts: led, Clock: c.Clock, Log: log,
 	}, payoutCfg)
 	c.Callbacks = callbacks.New(rt, c.Collections, c.Payouts)
-	if c.Notify, c.NotifyStore, err = c.buildNotify(sealer, log); err != nil {
+	if err := c.buildPeople(secrets{sealer, indexer}, log); err != nil {
 		return err
 	}
 	c.Webhooks = c.buildWebhooks(sealer, log)
 	c.Idempotency = c.buildIdempotency(log)
 	return nil
+}
+
+// buildPeople builds the services that tell and identify people: the audit
+// log, email and SMS, and users. Identity needs the other two.
+func (c *Container) buildPeople(sec secrets, log *slog.Logger) error {
+	c.AuditStore = auditstore.New(c.Pool)
+	c.Audit = audit.NewService(c.AuditStore, c.Clock)
+	var err error
+	if c.Notify, c.NotifyStore, err = c.buildNotify(sec.sealer, log); err != nil {
+		return err
+	}
+	return c.buildIdentity(sec, log)
 }
 
 func (c *Container) buildWebhooks(sealer *crypto.Sealer, log *slog.Logger) *webhooks.Service {

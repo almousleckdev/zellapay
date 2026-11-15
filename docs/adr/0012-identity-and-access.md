@@ -41,3 +41,11 @@ everything else:
   before any live launch.
 - Production needs an email provider, an SMS gateway and a bot-protection
   provider chosen before launch.
+
+## Addendum: TOTP uses HMAC-SHA1
+
+Authenticator apps compute codes with HMAC-SHA1, and Google Authenticator
+ignores any other algorithm. HMAC-SHA1 is not weakened by SHA-1 collisions.
+`internal/platform/totp` therefore uses it, and `.golangci.yml` exempts that
+one file from gosec rule G505. It is the only lint exemption in the project.
+Moving to SHA-256 would lock out Google Authenticator users.

@@ -22,6 +22,15 @@ linters:
     - revive
     - staticcheck
     - unused
+  exclusions:
+    rules:
+      # TOTP (RFC 6238) is HMAC-SHA1 in every authenticator app, including
+      # Google Authenticator, which ignores any other algorithm. HMAC-SHA1 is
+      # not weakened by SHA-1 collisions. This is the only exemption, for one
+      # rule in one file. See docs/adr/0012-identity-and-access.md.
+      - path: internal/platform/totp/totp\.go
+        linters: [gosec]
+        text: "G505"
   settings:
     funlen:
       lines: 40

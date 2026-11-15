@@ -22,6 +22,9 @@ const usage = `usage:
   zellactl merchant payout-fee <merchant-id> <basis-points>
   zellactl key issue <merchant-id> <scope[,scope...]>
   zellactl notify test <email>     queue and send a test email (see MailDev)
+  zellactl identity invite <merchant-id> <email> <role>   email the first user an invitation
+  zellactl audit head              print the newest audit entry (copy it somewhere safe)
+  zellactl audit verify [--full]   check the audit log chain
 
 scopes: read, collections:write, payouts:write, webhooks:write
 environment: ZP_DATABASE_URL (required), ZP_ENV (must not be production)`
@@ -40,6 +43,9 @@ func run(ctx context.Context, args []string) error {
 	if len(args) > 0 && args[0] == "notify" {
 		return notifyCommand(ctx, args[1:])
 	}
+	if len(args) > 0 && args[0] == "identity" {
+		return identityCommand(ctx, args[1:])
+	}
 	dsn := os.Getenv("ZP_DATABASE_URL")
 	if dsn == "" {
 		return fmt.Errorf("ZP_DATABASE_URL: required\n%s", usage)
@@ -49,6 +55,9 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("database: %w", err)
 	}
 	defer pool.Close()
+	if len(args) > 0 && args[0] == "audit" {
+		return auditCommand(ctx, pool, args[1:])
+	}
 	svc := merchants.NewService(merchantstore.New(pool), clock.System{}, merchants.ModeTest)
 	return dispatch(ctx, svc, args)
 }

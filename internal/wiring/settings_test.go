@@ -16,7 +16,8 @@ func setEnv(t *testing.T, kv map[string]string) {
 		"ZP_BLIND_INDEX_KEY", "ZP_SIMULATOR_ENABLED", "ZP_SIMULATOR_SECRET", "ZP_SIMULATOR_PREFIX",
 		"ZP_WEBHOOKS_ALLOW_PRIVATE", "ZP_SETTLEMENT_DELAY", "ZP_PAYOUT_MAX_AMOUNT",
 		"ZP_SMTP_ADDR", "ZP_MAIL_FROM", "ZP_SMTP_USERNAME", "ZP_SMTP_PASSWORD",
-		"ZP_SMTP_REQUIRE_TLS",
+		"ZP_SMTP_REQUIRE_TLS", "ZP_PASSWORD_PEPPER", "ZP_PASSWORD_PEPPER_VERSION",
+		"ZP_DASHBOARD_URL",
 	} {
 		t.Setenv(name, "")
 	}
@@ -30,6 +31,7 @@ func valid() map[string]string {
 		"ZP_DATABASE_URL": "postgres://zellapay@db.internal/zellapay",
 		"ZP_REDIS_URL":    "redis://cache.internal:6379/0",
 		"ZP_DATA_KEY":     key(32), "ZP_BLIND_INDEX_KEY": key(32), "ZP_SIMULATOR_SECRET": key(32),
+		"ZP_PASSWORD_PEPPER": key(32),
 	}
 }
 
@@ -135,7 +137,10 @@ func TestLimitsDefaultToSafeValuesAndAreValidated(t *testing.T) {
 }
 
 func TestHandBuiltSettingsCannotSilentlyRefuseEveryPayout(t *testing.T) {
-	base := Settings{PayoutMaxAmount: 1, SMTPAddr: "h:25", MailFrom: "a@b.com"}
+	base := Settings{
+		PayoutMaxAmount: 1, SMTPAddr: "h:25", MailFrom: "a@b.com",
+		PasswordPepper: make([]byte, 32), DashboardURL: "http://localhost:3001",
+	}
 	if err := base.Validate(); err != nil {
 		t.Fatalf("an immediate settlement is allowed: %v", err)
 	}
@@ -150,6 +155,8 @@ func TestHandBuiltSettingsCannotSilentlyRefuseEveryPayout(t *testing.T) {
 		"negative delay": with(func(s *Settings) { s.SettlementDelay = -time.Second }),
 		"no mail server": with(func(s *Settings) { s.SMTPAddr = "" }),
 		"no mail sender": with(func(s *Settings) { s.MailFrom = "" }),
+		"short pepper":   with(func(s *Settings) { s.PasswordPepper = []byte("x") }),
+		"no dashboard":   with(func(s *Settings) { s.DashboardURL = "" }),
 	} {
 		if err := s.Validate(); err == nil {
 			t.Errorf("%s must be rejected", name)
@@ -172,6 +179,7 @@ func TestDevelopmentMailGoesToMailDevAndSMSToTheLog(t *testing.T) {
 func productionMail() map[string]string {
 	env := valid()
 	env["ZP_ENV"] = "production"
+	env["ZP_DASHBOARD_URL"] = "https://merchant.zellapay.example"
 	env["ZP_SMTP_ADDR"] = "smtp.mail.example:587"
 	env["ZP_MAIL_FROM"] = "ZellaPay <no-reply@zellapay.example>"
 	return env
@@ -200,6 +208,7 @@ func TestProductionMailNeedsARealServerAndAlwaysUsesTLS(t *testing.T) {
 func TestProductionNeverFallsBackToTheDevelopmentMailServer(t *testing.T) {
 	env := valid()
 	env["ZP_ENV"] = "production"
+	env["ZP_DASHBOARD_URL"] = "https://merchant.zellapay.example"
 	setEnv(t, env)
 	_, err := SettingsFromEnv()
 	if err == nil || !strings.Contains(err.Error(), "ZP_SMTP_ADDR") {

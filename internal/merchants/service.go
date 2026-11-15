@@ -40,6 +40,11 @@ func (s *Service) CreateMerchant(ctx context.Context, name, currency string) (Me
 	})
 }
 
+// GetMerchant returns a merchant by ID, or ErrNotFound.
+func (s *Service) GetMerchant(ctx context.Context, id string) (Merchant, error) {
+	return s.repo.GetMerchant(ctx, id)
+}
+
 // SetStatus activates or suspends a merchant.
 func (s *Service) SetStatus(ctx context.Context, id string, st Status) error {
 	switch st {

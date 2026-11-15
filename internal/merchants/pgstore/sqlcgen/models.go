@@ -10,6 +10,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuditHead struct {
+	ID   int16
+	Seq  int64
+	Hash []byte
+}
+
+type AuditLog struct {
+	Seq        int64
+	At         pgtype.Timestamptz
+	ActorKind  string
+	ActorID    string
+	Action     string
+	TargetKind string
+	TargetID   string
+	Reason     string
+	Change     string
+	Ip         string
+	UserAgent  string
+	RequestID  string
+	PrevHash   []byte
+	Hash       []byte
+}
+
+type AuditVerification struct {
+	ID           int16
+	VerifiedSeq  int64
+	VerifiedHash []byte
+	VerifiedAt   pgtype.Timestamptz
+	BrokenSeq    int64
+	BrokenReason string
+}
+
 type Collection struct {
 	ID                  string
 	MerchantID          string
@@ -51,6 +83,16 @@ type CollectionOutbox struct {
 	PublishedAt  pgtype.Timestamptz
 }
 
+type EmailToken struct {
+	ID        string
+	UserID    string
+	Purpose   string
+	TokenHash []byte
+	ExpiresAt pgtype.Timestamptz
+	UsedAt    pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
 type IdempotencyKey struct {
 	Scope               string
 	Key                 string
@@ -62,6 +104,20 @@ type IdempotencyKey struct {
 	ResponseBody        []byte
 	CreatedAt           pgtype.Timestamptz
 	ExpiresAt           pgtype.Timestamptz
+}
+
+type Invitation struct {
+	ID         string
+	MerchantID string
+	Email      string
+	Role       string
+	Locale     string
+	TokenHash  []byte
+	InvitedBy  string
+	ExpiresAt  pgtype.Timestamptz
+	UsedAt     pgtype.Timestamptz
+	RevokedAt  pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
 }
 
 type LedgerAccount struct {
@@ -115,6 +171,28 @@ type MerchantApiKey struct {
 	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 	RevokedAt   pgtype.Timestamptz
+}
+
+type MerchantUser struct {
+	ID                string
+	MerchantID        string
+	Email             string
+	Name              string
+	Role              string
+	Status            string
+	Locale            string
+	PasswordHash      string
+	PasswordChangedAt pgtype.Timestamptz
+	EmailVerifiedAt   pgtype.Timestamptz
+	CreatedAt         pgtype.Timestamptz
+}
+
+type MfaCredential struct {
+	UserID      string
+	SecretEnc   string
+	ConfirmedAt pgtype.Timestamptz
+	LastStep    int64
+	CreatedAt   pgtype.Timestamptz
 }
 
 type Notification struct {
@@ -172,6 +250,27 @@ type PayoutOutbox struct {
 	EventType   string
 	CreatedAt   pgtype.Timestamptz
 	PublishedAt pgtype.Timestamptz
+}
+
+type RecoveryCode struct {
+	ID        string
+	UserID    string
+	CodeHash  []byte
+	UsedAt    pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
+type Session struct {
+	ID         string
+	UserID     string
+	TokenHash  []byte
+	CreatedAt  pgtype.Timestamptz
+	LastSeenAt pgtype.Timestamptz
+	ExpiresAt  pgtype.Timestamptz
+	MfaAt      pgtype.Timestamptz
+	Ip         string
+	UserAgent  string
+	RevokedAt  pgtype.Timestamptz
 }
 
 type WebhookAttempt struct {

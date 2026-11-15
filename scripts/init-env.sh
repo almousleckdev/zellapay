@@ -17,6 +17,7 @@ sed \
   -e "s|^ZP_DATA_KEY=.*|ZP_DATA_KEY=$(secret)|" \
   -e "s|^ZP_BLIND_INDEX_KEY=.*|ZP_BLIND_INDEX_KEY=$(secret)|" \
   -e "s|^ZP_SIMULATOR_SECRET=.*|ZP_SIMULATOR_SECRET=$(secret)|" \
+  -e "s|^ZP_PASSWORD_PEPPER=.*|ZP_PASSWORD_PEPPER=$(secret)|" \
   .env.example > "$target"
 
 echo "Created $target with new secrets. Keep it: it is ignored by git."

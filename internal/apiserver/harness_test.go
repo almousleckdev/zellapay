@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/zellapay/zellapay/internal/apiserver"
+	"github.com/zellapay/zellapay/internal/identity"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/operators/simulator"
 	"github.com/zellapay/zellapay/internal/platform/ids"
@@ -87,6 +88,9 @@ func settings() wiring.Settings {
 		SMSLogOnly:      true,
 		SettlementDelay: 24 * time.Hour,
 		PayoutMaxAmount: 5_000_000,
+		PasswordPepper:  secret(3), PasswordPepperVersion: 1,
+		PasswordParams: identity.Params{Memory: 8, Passes: 1, Lanes: 1},
+		DashboardURL:   "http://localhost:3001",
 	}
 }
 

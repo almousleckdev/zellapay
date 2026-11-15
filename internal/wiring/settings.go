@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zellapay/zellapay/internal/identity"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/webhooks"
 )
@@ -29,6 +30,16 @@ type Settings struct {
 	DataKeyID     string
 	DataKey       []byte
 	BlindIndexKey []byte
+
+	// PasswordPepper is mixed into every password before hashing. It never
+	// lives in the database. PasswordPepperVersion is stored with each hash.
+	// PasswordParams may be left zero to use the design's argon2id cost.
+	PasswordPepper        []byte
+	PasswordPepperVersion int
+	PasswordParams        identity.Params
+	// DashboardURL is the merchant dashboard's public address; emailed
+	// links start with it.
+	DashboardURL string
 
 	SimulatorEnabled bool
 	SimulatorSecret  []byte
@@ -76,7 +87,8 @@ func SettingsFromEnv() (Settings, error) {
 	errs = append(errs, err)
 	s.BlindIndexKey, err = secretFromEnv("ZP_BLIND_INDEX_KEY")
 	errs = append(errs, err)
-	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits(), s.loadMail())
+	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits(),
+		s.loadMail(), s.loadIdentity())
 	if err := errors.Join(errs...); err != nil {
 		return Settings{}, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -114,6 +126,12 @@ func (s Settings) Validate() error {
 	}
 	if s.SMTPAddr == "" || s.MailFrom == "" {
 		errs = append(errs, errors.New("SMTPAddr and MailFrom: required"))
+	}
+	if len(s.PasswordPepper) < minSecretBytes {
+		errs = append(errs, errors.New("PasswordPepper: at least 32 bytes required"))
+	}
+	if !strings.HasPrefix(s.DashboardURL, "http") {
+		errs = append(errs, errors.New("DashboardURL: must be an http or https address"))
 	}
 	return errors.Join(errs...)
 }

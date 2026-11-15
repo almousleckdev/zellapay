@@ -4,9 +4,13 @@ package pgtest
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,4 +95,38 @@ func NewPool(t *testing.T, dsn string) *pgxpool.Pool {
 	}
 	t.Cleanup(pool.Close)
 	return pool
+}
+
+// Fresh creates a new, migrated database inside the same server and returns a
+// pool to it. Use it for tests that damage data on purpose, so they cannot
+// disturb other tests. The database is dropped when the test ends.
+func Fresh(t *testing.T, dsn string) *pgxpool.Pool {
+	t.Helper()
+	ctx := context.Background()
+	admin := NewPool(t, dsn)
+	name := "fresh_" + strings.ReplaceAll(uuidLike(), "-", "")
+	if _, err := admin.Exec(ctx, "CREATE DATABASE "+name); err != nil {
+		t.Fatal(err)
+	}
+	u, err := url.Parse(dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u.Path = "/" + name
+	fresh := u.String()
+	if err := migrate(fresh); err != nil {
+		t.Fatal(err)
+	}
+	pool := NewPool(t, fresh)
+	t.Cleanup(func() {
+		pool.Close()
+		_, _ = admin.Exec(ctx, "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
+	})
+	return pool
+}
+
+func uuidLike() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }

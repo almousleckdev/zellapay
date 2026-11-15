@@ -16,17 +16,38 @@ const (
 	sweepInterval = 2 * time.Second
 	webhookBatch  = 100
 	notifyBatch   = 50
+
+	auditRoutineEvery = 5 * time.Minute
+	auditFullEvery    = 24 * time.Hour
+	auditBatch        = 1000
 )
 
+// schedule runs something at most once per interval.
+type schedule struct {
+	every time.Duration
+	last  time.Time
+}
+
+func (s *schedule) due(now time.Time) bool {
+	if now.Sub(s.last) < s.every {
+		return false
+	}
+	s.last = now
+	return true
+}
+
 // Run drives all background work until ctx ends: the simulator's callbacks
-// (sandbox only), sweeping open collections, publishing outbox events and
-// delivering webhooks. Every step is idempotent and safe to run from several
-// processes at once. It is run by the worker, and by the api process itself
-// when the in-memory simulator is enabled.
+// (sandbox only), sweeping open collections, publishing outbox events,
+// delivering webhooks and notifications, and checking the audit log. Every
+// step is idempotent and safe to run from several processes at once. It is
+// run by the worker, and by the api process itself when the in-memory
+// simulator is enabled.
 func (c *Container) Run(ctx context.Context, log *slog.Logger) {
 	tick := time.NewTicker(tickInterval)
 	defer tick.Stop()
-	var lastSweep time.Time
+	sweep := schedule{every: sweepInterval}
+	routine := schedule{every: auditRoutineEvery}
+	full := schedule{every: auditFullEvery}
 	for {
 		select {
 		case <-ctx.Done():
@@ -35,14 +56,19 @@ func (c *Container) Run(ctx context.Context, log *slog.Logger) {
 			if c.Simulator != nil {
 				c.deliverSimulatorCallbacks(ctx, log)
 			}
-			if now.Sub(lastSweep) >= sweepInterval {
+			if sweep.due(now) {
 				c.sweep(ctx, log)
 				c.sweepPayouts(ctx, log)
 				c.settle(ctx, log)
-				lastSweep = now
 			}
 			c.runWebhooks(ctx, log)
 			c.runNotifications(ctx, log)
+			if routine.due(now) {
+				c.checkAudit(ctx, log, false)
+			}
+			if full.due(now) {
+				c.checkAudit(ctx, log, true)
+			}
 		}
 	}
 }
@@ -121,5 +147,23 @@ func (c *Container) runNotifications(ctx context.Context, log *slog.Logger) {
 	}
 	if res.Attempted > 0 {
 		log.Info("notifications", "sent", res.Sent, "retrying", res.Retrying, "dead", res.Dead)
+	}
+}
+
+// checkAudit verifies the audit log. A break is logged as an error on every
+// pass until a person resolves it: it means the history may have been altered.
+func (c *Container) checkAudit(ctx context.Context, log *slog.Logger, full bool) {
+	verify := c.Audit.Verify
+	if full {
+		verify = c.Audit.VerifyFull
+	}
+	res, err := verify(ctx, auditBatch)
+	if err != nil {
+		log.Error("audit verification could not run", "err", err)
+		return
+	}
+	if res.Broken != nil {
+		log.Error("AUDIT LOG TAMPERING DETECTED", "seq", res.Broken.Seq,
+			"reason", res.Broken.Reason, "verified_through", res.VerifiedThrough)
 	}
 }

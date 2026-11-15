@@ -45,9 +45,9 @@ Each step ships with tests and leaves the system working.
 | Step | Delivers |
 |---|---|
 | 1 | `notify`: interface, MailDev email, logged SMS, outbox and worker. **Done.** |
-| 2 | `audit`: append-only hash-chained log with an integrity check |
-| 3 | `identity`: users, argon2id passwords, invitations, verification, reset |
-| 4 | Sessions, TOTP MFA with recovery codes, throttling and lockout |
+| 2 | `audit`: append-only hash-chained log with an integrity check. **Done.** |
+| 3 | `identity`: users, argon2id passwords, invitations, verification, reset. **Done.** Sessions revoke on reset in step 4. |
+| 4 | Sessions, TOTP MFA with recovery codes, throttling and lockout. **Done.** |
 | 5 | `access`: roles, permissions, step-up, and the policy test table |
 | 6 | `/dashboard` routes and OpenAPI; `zellamerchant` sign-in and security pages |
 | 7 | `onboarding`: application, documents, review and approval; `zellapayadmin` queue |

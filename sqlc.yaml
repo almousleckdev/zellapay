@@ -56,3 +56,19 @@ sql:
         package: sqlcgen
         out: internal/notify/pgstore/sqlcgen
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/audit
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/audit/pgstore/sqlcgen
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/identity
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/identity/pgstore/sqlcgen
+        sql_package: pgx/v5
