@@ -30,6 +30,7 @@ import (
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
 	idemstore "github.com/zellapay/zellapay/internal/platform/idempotency/pgstore"
 	"github.com/zellapay/zellapay/internal/platform/idempotency/rediscache"
+	"github.com/zellapay/zellapay/internal/staff"
 	"github.com/zellapay/zellapay/internal/webhooks"
 	"github.com/zellapay/zellapay/internal/webhooks/httpsender"
 	webhookstore "github.com/zellapay/zellapay/internal/webhooks/pgstore"
@@ -56,6 +57,7 @@ type Container struct {
 	Notify      *notify.Service
 	Identity    *identity.Service
 	MFA         *identity.MFA
+	Staff       *staff.Service
 	Sessions    *identity.Sessions
 	Audit       *audit.Service
 	AuditStore  *auditstore.Store

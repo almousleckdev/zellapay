@@ -11,10 +11,10 @@ import (
 	"github.com/pb33f/libopenapi/datamodel"
 )
 
-// dashboardOperations reads method and path pairs from the dashboard contract.
-func dashboardOperations(t *testing.T) [][2]string {
+// operationsOf reads method and path pairs from a contract document.
+func operationsOf(t *testing.T, file string) [][2]string {
 	t.Helper()
-	abs, err := filepath.Abs("../../api/dashboard.openapi.yaml")
+	abs, err := filepath.Abs("../../api/" + file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,14 +41,25 @@ func dashboardOperations(t *testing.T) [][2]string {
 	return ops
 }
 
-func TestEveryDocumentedDashboardOperationIsServed(t *testing.T) {
+func TestEveryDocumentedOperationIsServed(t *testing.T) {
 	e := newEnv(t)
-	ops := dashboardOperations(t)
-	if len(ops) != 20 {
-		t.Fatalf("contract has %d operations, the server mounts 20", len(ops))
+	for file, want := range map[string]int{
+		"dashboard.openapi.yaml": 20, "admin.openapi.yaml": 12,
+	} {
+		ops := operationsOf(t, file)
+		if len(ops) != want {
+			t.Fatalf("%s has %d operations, the server mounts %d", file, len(ops), want)
+		}
+		e.expectServed(t, ops)
 	}
+}
+
+func (e *env) expectServed(t *testing.T, ops [][2]string) {
+	t.Helper()
 	for _, op := range ops {
-		path := strings.NewReplacer("{session_id}", "x", "{key_id}", "x").Replace(op[1])
+		path := strings.NewReplacer(
+			"{session_id}", "x", "{key_id}", "x", "{id}", "x",
+		).Replace(op[1])
 		r := e.dash(op[0], path, "", "{}")
 		if r.status == 404 && r.errorCode(t) == "" || r.status == 405 {
 			t.Errorf("%s %s is documented but not served (%d)", op[0], op[1], r.status)

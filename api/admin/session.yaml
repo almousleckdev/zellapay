@@ -1,0 +1,54 @@
+session:
+  post:
+    tags: [Session]
+    operationId: staffSignIn
+    summary: Sign in with email and password
+    description: |
+      Every failure looks the same, and repeated failures are slowed down with
+      `429` and `Retry-After`, even if the password is right.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/SignIn
+    responses:
+      '201':
+        description: A session was opened. It still needs a passkey.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/SignedIn
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/InvalidCredentials
+      '429':
+        $ref: ../dashboard/responses.yaml#/TooManyAttempts
+  get:
+    tags: [Session]
+    operationId: getStaffSession
+    summary: Describe the signed-in member and session
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: The member and what their session still needs.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/Current
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+  delete:
+    tags: [Session]
+    operationId: staffSignOut
+    summary: End the current session
+    security:
+      - sessionAuth: []
+    responses:
+      '204':
+        description: The session ended.
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized

@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info:
+  title: ZellaPay Admin API
+  version: 1.0.0
+  summary: Routes used by the ZellaPay admin console. Staff only.
+  description: |
+    These routes are called only by the admin console's own server, never by a
+    browser and never by merchants. Staff are completely separate from merchant
+    users: their own accounts, sessions and credentials.
+
+    ## Signing in
+    `POST /admin/session` checks the password and returns an opaque session
+    token. The session has not used a passkey yet: its `mfa` state says whether
+    to register one (`enrol_required`) or use one (`required`). Passkeys are
+    WebAuthn credentials; the begin routes return the options the browser's
+    `navigator.credentials` call needs, and the finish routes take its answer.
+
+    ## Sessions
+    15 minutes idle, 8 hours in all. Every response is `Cache-Control: no-store`.
+
+    ## No idempotency keys
+    As with the dashboard routes, responses hold tokens, so they are never
+    cached for replay. Every challenge is single use instead.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://admin.api.zellapay.example
+    description: Production
+tags:
+  - name: Session
+    description: Sign in and out.
+  - name: Passkeys
+    description: Register and use passkeys.
+  - name: Merchants
+    description: |
+      Look up merchants and suspend or restore them. Every route needs a
+      session that has used a passkey and a role that holds the permission.
+paths:
+  /admin/session:
+    $ref: ./admin/session.yaml#/session
+  /admin/session/passkey/begin:
+    $ref: ./admin/passkeys.yaml#/beginLogin
+  /admin/session/passkey/finish:
+    $ref: ./admin/passkeys.yaml#/finishLogin
+  /admin/passkeys:
+    $ref: ./admin/passkeys.yaml#/list
+  /admin/passkeys/begin:
+    $ref: ./admin/passkeys.yaml#/beginRegistration
+  /admin/passkeys/finish:
+    $ref: ./admin/passkeys.yaml#/finishRegistration
+  /admin/merchants:
+    $ref: ./admin/merchants.yaml#/list
+  /admin/merchants/{id}:
+    $ref: ./admin/merchants.yaml#/detail
+  /admin/merchants/{id}/suspend:
+    $ref: ./admin/merchants.yaml#/suspend
+  /admin/merchants/{id}/restore:
+    $ref: ./admin/merchants.yaml#/restore
+components:
+  securitySchemes:
+    sessionAuth:
+      type: http
+      scheme: bearer
+      description: The opaque session token returned by `POST /admin/session`.

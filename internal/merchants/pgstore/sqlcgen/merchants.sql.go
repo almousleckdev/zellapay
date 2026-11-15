@@ -12,6 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const changeMerchantStatus = `-- name: ChangeMerchantStatus :execrows
+UPDATE merchants
+   SET status = $1, updated_at = $2
+ WHERE id = $3 AND status = $4
+`
+
+type ChangeMerchantStatusParams struct {
+	ToStatus   string
+	Now        pgtype.Timestamptz
+	ID         string
+	FromStatus string
+}
+
+func (q *Queries) ChangeMerchantStatus(ctx context.Context, arg ChangeMerchantStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, changeMerchantStatus,
+		arg.ToStatus,
+		arg.Now,
+		arg.ID,
+		arg.FromStatus,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createMerchant = `-- name: CreateMerchant :one
 INSERT INTO merchants (id, name, default_currency, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $4)
@@ -227,6 +253,69 @@ func (q *Queries) ListAPIKeys(ctx context.Context, merchantID string) ([]ListAPI
 			&i.ExpiresAt,
 			&i.RevokedAt,
 			&i.Label,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMerchants = `-- name: ListMerchants :many
+SELECT id, name, status, kyc_status, default_currency, created_at
+  FROM merchants
+ WHERE ($1::text = '' OR status = $1)
+   AND ($2::text = '' OR strpos(lower(name), lower($2)) > 0)
+   AND (NOT $3::boolean
+        OR (created_at, id) < ($4::timestamptz, $5::text))
+ ORDER BY created_at DESC, id DESC
+ LIMIT $6
+`
+
+type ListMerchantsParams struct {
+	Status         string
+	Search         string
+	HasCursor      bool
+	AfterCreatedAt pgtype.Timestamptz
+	AfterID        string
+	RowLimit       int32
+}
+
+type ListMerchantsRow struct {
+	ID              string
+	Name            string
+	Status          string
+	KycStatus       string
+	DefaultCurrency string
+	CreatedAt       pgtype.Timestamptz
+}
+
+func (q *Queries) ListMerchants(ctx context.Context, arg ListMerchantsParams) ([]ListMerchantsRow, error) {
+	rows, err := q.db.Query(ctx, listMerchants,
+		arg.Status,
+		arg.Search,
+		arg.HasCursor,
+		arg.AfterCreatedAt,
+		arg.AfterID,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMerchantsRow
+	for rows.Next() {
+		var i ListMerchantsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Status,
+			&i.KycStatus,
+			&i.DefaultCurrency,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

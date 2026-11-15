@@ -17,7 +17,7 @@ func setEnv(t *testing.T, kv map[string]string) {
 		"ZP_WEBHOOKS_ALLOW_PRIVATE", "ZP_SETTLEMENT_DELAY", "ZP_PAYOUT_MAX_AMOUNT",
 		"ZP_SMTP_ADDR", "ZP_MAIL_FROM", "ZP_SMTP_USERNAME", "ZP_SMTP_PASSWORD",
 		"ZP_SMTP_REQUIRE_TLS", "ZP_PASSWORD_PEPPER", "ZP_PASSWORD_PEPPER_VERSION",
-		"ZP_DASHBOARD_URL", "ZP_TRUSTED_PROXIES",
+		"ZP_DASHBOARD_URL", "ZP_TRUSTED_PROXIES", "ZP_ADMIN_URL", "ZP_WEBAUTHN_RP_ID",
 	} {
 		t.Setenv(name, "")
 	}
@@ -140,6 +140,7 @@ func TestHandBuiltSettingsCannotSilentlyRefuseEveryPayout(t *testing.T) {
 	base := Settings{
 		PayoutMaxAmount: 1, SMTPAddr: "h:25", MailFrom: "a@b.com",
 		PasswordPepper: make([]byte, 32), DashboardURL: "http://localhost:3001",
+		AdminURL: "http://localhost:3002", WebAuthnRPID: "localhost",
 	}
 	if err := base.Validate(); err != nil {
 		t.Fatalf("an immediate settlement is allowed: %v", err)
@@ -180,6 +181,7 @@ func productionMail() map[string]string {
 	env := valid()
 	env["ZP_ENV"] = "production"
 	env["ZP_DASHBOARD_URL"] = "https://merchant.zellapay.example"
+	env["ZP_ADMIN_URL"] = "https://admin.zellapay.example"
 	env["ZP_SMTP_ADDR"] = "smtp.mail.example:587"
 	env["ZP_MAIL_FROM"] = "ZellaPay <no-reply@zellapay.example>"
 	return env
@@ -209,6 +211,7 @@ func TestProductionNeverFallsBackToTheDevelopmentMailServer(t *testing.T) {
 	env := valid()
 	env["ZP_ENV"] = "production"
 	env["ZP_DASHBOARD_URL"] = "https://merchant.zellapay.example"
+	env["ZP_ADMIN_URL"] = "https://admin.zellapay.example"
 	setEnv(t, env)
 	_, err := SettingsFromEnv()
 	if err == nil || !strings.Contains(err.Error(), "ZP_SMTP_ADDR") {

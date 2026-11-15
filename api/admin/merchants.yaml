@@ -1,0 +1,131 @@
+list:
+  get:
+    tags: [Merchants]
+    operationId: listMerchants
+    summary: List merchants, newest first
+    description: |
+      Needs `merchants:read` and a session that has used a passkey. Contact
+      details are not part of this view.
+    security:
+      - sessionAuth: []
+    parameters:
+      - name: status
+        in: query
+        schema:
+          $ref: ./merchant-schemas.yaml#/MerchantStatus
+      - name: q
+        in: query
+        description: Part of the merchant name, case-insensitive. At most 64 characters.
+        schema: {type: string, maxLength: 64}
+      - name: cursor
+        in: query
+        description: The `next_cursor` of the previous page.
+        schema: {type: string}
+      - name: limit
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+    responses:
+      '200':
+        description: One page of merchants.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/MerchantList
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+detail:
+  get:
+    tags: [Merchants]
+    operationId: getMerchant
+    summary: Get one merchant
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    responses:
+      '200':
+        description: The merchant and its fee settings.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/MerchantDetail
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+suspend:
+  post:
+    tags: [Merchants]
+    operationId: suspendMerchant
+    summary: Suspend an active merchant
+    description: |
+      Needs `merchants:suspend`. The merchant's API keys stop working at once.
+      Only an `active` merchant can be suspended. The reason is audited.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/StatusReason
+    responses:
+      '200':
+        description: The merchant is now suspended.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/Merchant
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition
+restore:
+  post:
+    tags: [Merchants]
+    operationId: restoreMerchant
+    summary: Restore a suspended merchant
+    description: |
+      Needs `merchants:restore`. Only a `suspended` merchant can be restored.
+      The reason is audited.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/StatusReason
+    responses:
+      '200':
+        description: The merchant is active again.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/Merchant
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition

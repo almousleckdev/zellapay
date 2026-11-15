@@ -1,0 +1,94 @@
+SignIn:
+  type: object
+  additionalProperties: false
+  required: [email, password]
+  properties:
+    email: {type: string, format: email, maxLength: 254}
+    password: {type: string, maxLength: 128, writeOnly: true}
+SignedIn:
+  type: object
+  required: [session_token, expires_at, mfa]
+  properties:
+    session_token:
+      type: string
+      description: Keep it on the server. It is shown only here.
+    expires_at: {type: string, format: date-time}
+    mfa:
+      $ref: '#/MFAState'
+MFAState:
+  type: string
+  enum: [enrol_required, required, done]
+  description: |
+    `enrol_required`: register a passkey. `required`: use one. `done`: a
+    passkey was used in this session.
+Current:
+  type: object
+  required: [user, session, mfa, passkeys, permissions]
+  properties:
+    user:
+      type: object
+      required: [id, email, name, role]
+      properties:
+        id: {type: string}
+        email: {type: string, format: email}
+        name: {type: string}
+        role:
+          type: string
+          enum: [support, risk_analyst, finance, admin, super_admin]
+    session:
+      type: object
+      required: [id, created_at, expires_at, mfa_verified_at]
+      properties:
+        id: {type: string}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+        mfa_verified_at: {type: [string, 'null'], format: date-time}
+    mfa:
+      $ref: '#/MFAState'
+    passkeys:
+      type: integer
+      minimum: 0
+      description: How many passkeys the member has. The design asks for two.
+    permissions:
+      type: array
+      description: |
+        What the member's role allows, such as `merchants:read`. The console
+        shows only these; the backend checks every request anyway.
+      items:
+        type: string
+        enum: [merchants:read, merchants:suspend, merchants:restore]
+WebAuthnOptions:
+  type: object
+  description: |
+    The options object for `navigator.credentials.create` or `.get`, in the
+    WebAuthn JSON form, as `{"publicKey": {...}}`.
+  additionalProperties: true
+Ceremony:
+  type: object
+  additionalProperties: false
+  required: [credential]
+  properties:
+    label:
+      type: string
+      maxLength: 64
+      description: A name for a new passkey, such as "YubiKey". Registration only.
+    credential:
+      type: object
+      description: The credential the browser produced, in its JSON form.
+      additionalProperties: true
+Passkey:
+  type: object
+  required: [id, label, created_at, last_used_at]
+  properties:
+    id: {type: string}
+    label: {type: string}
+    created_at: {type: string, format: date-time}
+    last_used_at: {type: [string, 'null'], format: date-time}
+PasskeyList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Passkey'

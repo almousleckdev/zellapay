@@ -53,6 +53,15 @@ func (c *Container) buildIdentity(sec secrets, log *slog.Logger) error {
 		return err
 	}
 	limiter := redisthrottle.New(c.Redis, sec.indexer, c.Clock, redisthrottle.DefaultPolicy())
+	if err := c.buildSessions(repo, limiter, log); err != nil {
+		return err
+	}
+	return c.buildStaff(hasher, limiter, log)
+}
+
+func (c *Container) buildSessions(
+	repo *identitystore.Store, limiter identity.Throttle, log *slog.Logger,
+) (err error) {
 	c.Sessions, err = identity.NewSessions(identity.SessionDeps{
 		Repo: repo, Users: repo, Accounts: c.Identity, Factor: c.MFA,
 		Throttle: limiter, Clock: c.Clock, Log: log,

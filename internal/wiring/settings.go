@@ -41,6 +41,10 @@ type Settings struct {
 	// DashboardURL is the merchant dashboard's public address; emailed
 	// links start with it.
 	DashboardURL string
+	// AdminURL is where staff reach the admin console; passkeys are bound to
+	// it. WebAuthnRPID is the domain they are bound to, normally its host.
+	AdminURL     string
+	WebAuthnRPID string
 	// TrustedProxies are the networks whose X-Forwarded-For is believed.
 	TrustedProxies []netip.Prefix
 
@@ -91,7 +95,7 @@ func SettingsFromEnv() (Settings, error) {
 	s.BlindIndexKey, err = secretFromEnv("ZP_BLIND_INDEX_KEY")
 	errs = append(errs, err)
 	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits(),
-		s.loadMail(), s.loadIdentity(), s.loadTrustedProxies())
+		s.loadMail(), s.loadIdentity(), s.loadTrustedProxies(), s.loadStaff())
 	if err := errors.Join(errs...); err != nil {
 		return Settings{}, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -132,6 +136,9 @@ func (s Settings) Validate() error {
 	}
 	if len(s.PasswordPepper) < minSecretBytes {
 		errs = append(errs, errors.New("PasswordPepper: at least 32 bytes required"))
+	}
+	if s.AdminURL == "" || s.WebAuthnRPID == "" {
+		errs = append(errs, errors.New("AdminURL and WebAuthnRPID: required"))
 	}
 	if !strings.HasPrefix(s.DashboardURL, "http") {
 		errs = append(errs, errors.New("DashboardURL: must be an http or https address"))

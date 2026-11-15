@@ -23,6 +23,7 @@ const usage = `usage:
   zellactl key issue <merchant-id> <scope[,scope...]>
   zellactl notify test <email>     queue and send a test email (see MailDev)
   zellactl identity invite <merchant-id> <email> <role>   email the first user an invitation
+  zellactl staff create-super-admin <email> <name>   password from ZP_STAFF_PASSWORD
   zellactl audit head              print the newest audit entry (copy it somewhere safe)
   zellactl audit verify [--full]   check the audit log chain
 
@@ -36,15 +37,22 @@ func main() {
 	}
 }
 
+// builtOnWiring are the commands that run the real services, so they need the
+// full configuration rather than only a database.
+var builtOnWiring = map[string]func(context.Context, []string) error{
+	"notify":   notifyCommand,
+	"staff":    staffCommand,
+	"identity": identityCommand,
+}
+
 func run(ctx context.Context, args []string) error {
 	if os.Getenv("ZP_ENV") == "production" {
 		return fmt.Errorf("refusing to run in production")
 	}
-	if len(args) > 0 && args[0] == "notify" {
-		return notifyCommand(ctx, args[1:])
-	}
-	if len(args) > 0 && args[0] == "identity" {
-		return identityCommand(ctx, args[1:])
+	if len(args) > 0 {
+		if command, ok := builtOnWiring[args[0]]; ok {
+			return command(ctx, args[1:])
+		}
 	}
 	dsn := os.Getenv("ZP_DATABASE_URL")
 	if dsn == "" {

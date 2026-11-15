@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/zellapay/zellapay/internal/access"
+	adminapi "github.com/zellapay/zellapay/internal/admin/httpapi"
 	"github.com/zellapay/zellapay/internal/apidocs"
 	"github.com/zellapay/zellapay/internal/collections/httpapi"
 	identityapi "github.com/zellapay/zellapay/internal/identity/httpapi"
@@ -15,6 +16,7 @@ import (
 	payoutsapi "github.com/zellapay/zellapay/internal/payouts/httpapi"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 	"github.com/zellapay/zellapay/internal/platform/idempotency"
+	staffapi "github.com/zellapay/zellapay/internal/staff/httpapi"
 	webhooksapi "github.com/zellapay/zellapay/internal/webhooks/httpapi"
 	"github.com/zellapay/zellapay/internal/wiring"
 )
@@ -41,6 +43,7 @@ func New(c *wiring.Container, opts Options, log *slog.Logger) http.Handler {
 	mountPayouts(mux, c, opts, log)
 	mountWebhooks(mux, c, opts, log)
 	mountDashboard(mux, c, opts, log)
+	mountAdmin(mux, c, opts, log)
 	return httpx.Middleware(log, mux)
 }
 
@@ -106,4 +109,19 @@ func mountDashboard(mux *http.ServeMux, c *wiring.Container, opts Options, log *
 		Keys: c.Merchants, Policy: policy, Clock: c.Clock, Mode: c.Settings.Mode,
 		Principal: identityapi.PrincipalFrom, Log: log,
 	}).Mount(mux, account.RequireSession)
+}
+
+// mountAdmin serves the admin console's routes. Only the console's own server
+// should call them.
+func mountAdmin(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog.Logger) {
+	clientIP := func(r *http.Request) string {
+		if addr := opts.ClientIP(r); addr.IsValid() {
+			return addr.String()
+		}
+		return ""
+	}
+	staffapi.New(staffapi.Deps{Staff: c.Staff, ClientIP: clientIP, Log: log}).Mount(mux)
+	adminapi.New(adminapi.Deps{
+		Sessions: c.Staff, Merchants: c.Merchants, ClientIP: clientIP, Log: log,
+	}).Mount(mux)
 }

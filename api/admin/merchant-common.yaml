@@ -1,0 +1,28 @@
+MerchantId:
+  name: id
+  in: path
+  required: true
+  description: The merchant ID.
+  schema: {type: string}
+MerchantNotFound:
+  description: No such merchant.
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: not_found
+          message: No such merchant.
+          request_id: 9f2c1a7e4b3d
+InvalidTransition:
+  description: The merchant is not in a state this change applies to.
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_transition
+          message: The merchant is not in a state this change applies to.
+          request_id: 9f2c1a7e4b3d

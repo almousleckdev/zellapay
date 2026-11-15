@@ -274,6 +274,48 @@ type Session struct {
 	RevokedAt  pgtype.Timestamptz
 }
 
+type StaffChallenge struct {
+	SessionID string
+	Kind      string
+	Data      []byte
+	ExpiresAt pgtype.Timestamptz
+}
+
+type StaffCredential struct {
+	ID           string
+	UserID       string
+	CredentialID []byte
+	Label        string
+	Data         []byte
+	CreatedAt    pgtype.Timestamptz
+	LastUsedAt   pgtype.Timestamptz
+}
+
+type StaffSession struct {
+	ID         string
+	UserID     string
+	TokenHash  []byte
+	CreatedAt  pgtype.Timestamptz
+	LastSeenAt pgtype.Timestamptz
+	ExpiresAt  pgtype.Timestamptz
+	MfaAt      pgtype.Timestamptz
+	Ip         string
+	UserAgent  string
+	RevokedAt  pgtype.Timestamptz
+}
+
+type StaffUser struct {
+	ID                string
+	Email             string
+	Name              string
+	Role              string
+	Status            string
+	PasswordHash      string
+	PasswordChangedAt pgtype.Timestamptz
+	CreatedBy         string
+	CreatedAt         pgtype.Timestamptz
+}
+
 type WebhookAttempt struct {
 	ID         int64
 	DeliveryID int64

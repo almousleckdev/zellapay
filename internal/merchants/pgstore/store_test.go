@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zellapay/zellapay/internal/audit"
+	auditstore "github.com/zellapay/zellapay/internal/audit/pgstore"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/pgstore"
 	"github.com/zellapay/zellapay/internal/platform/clock"
@@ -131,5 +133,48 @@ func TestKeysCannotBeDeleted(t *testing.T) {
 		"DELETE FROM merchant_api_keys WHERE id = $1", k.Key.ID)
 	if err == nil {
 		t.Fatal("deleting an api key must be rejected by the database")
+	}
+}
+
+func TestListSearchTreatsWildcardsAsPlainText(t *testing.T) {
+	svc, _ := newService(t) // creates "Acme" or similar
+	page, err := svc.List(context.Background(), merchants.ListQuery{Search: "%"})
+	if err != nil || len(page.Merchants) != 0 {
+		t.Fatalf("%% matched %d merchants, %v", len(page.Merchants), err)
+	}
+}
+
+func TestChangeStatusIsGuardedAndAudited(t *testing.T) {
+	pool := pgtest.NewPool(t, testDSN)
+	log := auditstore.New(pool)
+	svc := merchants.NewService(
+		pgstore.New(pool).WithAudit(log), clock.System{}, merchants.ModeTest,
+	).WithAuditor(audit.NewService(log, clock.System{}))
+	ctx := context.Background()
+	m, err := svc.CreateMerchant(ctx, "Acme", "XAF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetStatus(ctx, m.ID, merchants.StatusActive); err != nil {
+		t.Fatal(err)
+	}
+	c := merchants.StatusChange{
+		MerchantID: m.ID, By: audit.Actor{Kind: audit.ActorStaff, ID: "stf_1"},
+		Reason: "chargeback spike",
+	}
+	if _, err := svc.Restore(ctx, c); !errors.Is(err, merchants.ErrInvalidTransition) {
+		t.Fatalf("restore active = %v", err)
+	}
+	got, err := svc.Suspend(ctx, c)
+	if err != nil || got.Status != merchants.StatusSuspended {
+		t.Fatalf("suspend = %+v, %v", got, err)
+	}
+	recs, err := audit.NewService(log, clock.System{}).List(ctx, audit.Filter{TargetID: m.ID})
+	if err != nil || len(recs) != 1 || recs[0].Reason != "chargeback spike" {
+		t.Fatalf("audit = %+v, %v", recs, err)
+	}
+	c.MerchantID = "mer_missing"
+	if _, err := svc.Suspend(ctx, c); !errors.Is(err, merchants.ErrNotFound) {
+		t.Fatalf("missing = %v", err)
 	}
 }

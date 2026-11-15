@@ -11,6 +11,7 @@ import (
 
 	"github.com/zellapay/zellapay/internal/access"
 	"github.com/zellapay/zellapay/internal/identity"
+	"github.com/zellapay/zellapay/internal/identity/identityhttp"
 	"github.com/zellapay/zellapay/internal/platform/clock"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 )
@@ -70,7 +71,7 @@ func New(d Deps) *Handler { return &Handler{d: d} }
 func (h *Handler) decode(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 	if err := httpx.DecodeJSON(r, dst); err != nil {
-		httpx.WriteError(w, r, problemBadJSON)
+		httpx.WriteError(w, r, identityhttp.ProblemBadJSON)
 		return false
 	}
 	return true

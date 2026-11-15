@@ -61,3 +61,18 @@ SELECT payout_fee_bps FROM merchants WHERE id = @id;
 UPDATE merchants
    SET payout_fee_bps = @fee_bps, updated_at = @now
  WHERE id = @id;
+
+-- name: ListMerchants :many
+SELECT id, name, status, kyc_status, default_currency, created_at
+  FROM merchants
+ WHERE (@status::text = '' OR status = @status)
+   AND (@search::text = '' OR strpos(lower(name), lower(@search)) > 0)
+   AND (NOT @has_cursor::boolean
+        OR (created_at, id) < (@after_created_at::timestamptz, @after_id::text))
+ ORDER BY created_at DESC, id DESC
+ LIMIT @row_limit;
+
+-- name: ChangeMerchantStatus :execrows
+UPDATE merchants
+   SET status = @to_status, updated_at = @now
+ WHERE id = @id AND status = @from_status;

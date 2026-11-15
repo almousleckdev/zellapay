@@ -1,0 +1,113 @@
+beginRegistration:
+  post:
+    tags: [Passkeys]
+    operationId: beginPasskeyRegistration
+    summary: Start registering a passkey
+    description: |
+      Allowed for a session that has used no passkey yet (its first) or one
+      that has used a passkey (an additional one). Returns the options for
+      `navigator.credentials.create`.
+    security:
+      - sessionAuth: []
+    responses:
+      '201':
+        description: WebAuthn creation options. The challenge works once.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/WebAuthnOptions
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+finishRegistration:
+  post:
+    tags: [Passkeys]
+    operationId: finishPasskeyRegistration
+    summary: Finish registering a passkey
+    description: |
+      Takes the credential the browser created. Registering the first passkey
+      also counts as using one, so the session is complete.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/Ceremony
+    responses:
+      '201':
+        description: The passkey was stored.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/Passkey
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '422':
+        $ref: ../dashboard/responses.yaml#/InvalidCode
+beginLogin:
+  post:
+    tags: [Passkeys]
+    operationId: beginPasskeyLogin
+    summary: Start proving a passkey
+    description: Only for a session whose member has passkeys and has not used one.
+    security:
+      - sessionAuth: []
+    responses:
+      '201':
+        description: WebAuthn request options for `navigator.credentials.get`.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/WebAuthnOptions
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+finishLogin:
+  post:
+    tags: [Passkeys]
+    operationId: finishPasskeyLogin
+    summary: Finish proving a passkey
+    description: |
+      Checks the signed answer. A passkey that looks cloned is refused. Wrong
+      answers are counted per member and slowed down.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/Ceremony
+    responses:
+      '204':
+        description: The passkey was proven for this session.
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '422':
+        $ref: ../dashboard/responses.yaml#/InvalidCode
+      '429':
+        $ref: ../dashboard/responses.yaml#/TooManyAttempts
+list:
+  get:
+    tags: [Passkeys]
+    operationId: listPasskeys
+    summary: List your passkeys
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: The member's passkeys, oldest first.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/PasskeyList
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized

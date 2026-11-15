@@ -1,0 +1,54 @@
+Merchant:
+  type: object
+  required: [id, name, status, kyc_status, default_currency, created_at]
+  properties:
+    id: {type: string, examples: [mer_01HZX]}
+    name: {type: string}
+    status:
+      $ref: '#/MerchantStatus'
+    kyc_status: {type: string}
+    default_currency:
+      type: string
+      description: ISO 4217 code.
+      examples: [XAF]
+    created_at: {type: string, format: date-time}
+MerchantStatus:
+  type: string
+  enum: [pending, active, suspended]
+MerchantDetail:
+  allOf:
+    - $ref: '#/Merchant'
+    - type: object
+      required: [fee_bps, payout_fee_bps]
+      properties:
+        fee_bps:
+          type: integer
+          minimum: 0
+          description: Collection fee in basis points. Read only here.
+        payout_fee_bps:
+          type: integer
+          minimum: 0
+          description: Payout fee in basis points. Read only here.
+MerchantList:
+  type: object
+  required: [data, next_cursor]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Merchant'
+    next_cursor:
+      type: [string, 'null']
+      description: Pass as `cursor` for the next page. Null on the last page.
+StatusReason:
+  type: object
+  additionalProperties: false
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      minLength: 5
+      maxLength: 500
+      description: |
+        Why staff are doing this. Required, stored in the audit log and shown
+        to other staff. Never put personal data in it.

@@ -7,6 +7,13 @@ import (
 	"github.com/zellapay/zellapay/internal/audit"
 )
 
+// StatusUpdate is one guarded status change.
+type StatusUpdate struct {
+	ID       string
+	From, To Status
+	At       time.Time
+}
+
 // StoredKey is an API key together with its merchant's current status.
 type StoredKey struct {
 	Key            APIKey
@@ -18,6 +25,11 @@ type Repository interface {
 	CreateMerchant(ctx context.Context, m Merchant) (Merchant, error)
 	GetMerchant(ctx context.Context, id string) (Merchant, error)
 	SetStatus(ctx context.Context, id string, s Status, now time.Time) error
+	ListMerchants(ctx context.Context, q ListQuery) ([]Merchant, error)
+	// ChangeStatus moves a merchant from one status to another and appends
+	// the audit entries in one transaction. It returns ErrNotFound when there
+	// is no such merchant and ErrInvalidTransition when it is not in From.
+	ChangeStatus(ctx context.Context, u StatusUpdate, fx Effects) error
 	FeeBPS(ctx context.Context, id string) (int, error)
 	PayoutFeeBPS(ctx context.Context, id string) (int, error)
 	SetPayoutFeeBPS(ctx context.Context, id string, bps int, now time.Time) error

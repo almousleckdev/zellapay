@@ -3,9 +3,9 @@ package httpapi
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/zellapay/zellapay/internal/identity"
+	"github.com/zellapay/zellapay/internal/identity/identityhttp"
 	"github.com/zellapay/zellapay/internal/platform/httpx"
 )
 
@@ -29,23 +29,14 @@ func callerFrom(ctx context.Context) (caller, bool) {
 	return c, ok
 }
 
-func bearer(r *http.Request) (string, bool) {
-	const prefix = "Bearer "
-	h := r.Header.Get("Authorization")
-	if len(h) <= len(prefix) || !strings.EqualFold(h[:len(prefix)], prefix) {
-		return "", false
-	}
-	return strings.TrimSpace(h[len(prefix):]), true
-}
-
 // RequireSession rejects requests without a valid session token and stores
 // the caller in the context. A session that has not finished MFA is still
 // accepted; each route decides what that allows.
 func (h *Handler) RequireSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, ok := bearer(r)
+		token, ok := httpx.BearerToken(r)
 		if !ok {
-			httpx.WriteError(w, r, problemSession)
+			httpx.WriteError(w, r, identityhttp.ProblemSession)
 			return
 		}
 		p, err := h.d.Sessions.Resolve(r.Context(), token)

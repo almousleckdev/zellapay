@@ -2,6 +2,8 @@ package merchants
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -146,4 +148,54 @@ func (r *fakeRepo) ListKeys(_ context.Context, merchantID string) ([]APIKey, err
 		}
 	}
 	return out, nil
+}
+
+func (r *fakeRepo) ListMerchants(_ context.Context, q ListQuery) ([]Merchant, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var all []Merchant
+	for _, m := range r.merchants {
+		if q.Status != "" && m.Status != q.Status {
+			continue
+		}
+		if q.Search != "" && !strings.Contains(strings.ToLower(m.Name), strings.ToLower(q.Search)) {
+			continue
+		}
+		if q.After != nil && !olderThan(m, *q.After) {
+			continue
+		}
+		all = append(all, m)
+	}
+	sort.Slice(all, func(i, j int) bool { return newer(all[i], all[j]) })
+	if len(all) > q.Limit {
+		all = all[:q.Limit]
+	}
+	return all, nil
+}
+
+func newer(a, b Merchant) bool {
+	if a.CreatedAt.Equal(b.CreatedAt) {
+		return a.ID > b.ID
+	}
+	return a.CreatedAt.After(b.CreatedAt)
+}
+
+func olderThan(m Merchant, c Cursor) bool {
+	return newer(Merchant{ID: c.ID, CreatedAt: c.CreatedAt}, m)
+}
+
+func (r *fakeRepo) ChangeStatus(_ context.Context, u StatusUpdate, fx Effects) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	m, ok := r.merchants[u.ID]
+	if !ok {
+		return ErrNotFound
+	}
+	if m.Status != u.From {
+		return ErrInvalidTransition
+	}
+	m.Status = u.To
+	r.merchants[u.ID] = m
+	r.audits = append(r.audits, fx.Audit...)
+	return nil
 }

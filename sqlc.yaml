@@ -72,3 +72,11 @@ sql:
         package: sqlcgen
         out: internal/identity/pgstore/sqlcgen
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/staff
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/staff/pgstore/sqlcgen
+        sql_package: pgx/v5

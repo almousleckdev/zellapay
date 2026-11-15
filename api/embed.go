@@ -5,5 +5,6 @@ import "embed"
 
 // FS holds openapi.yaml and every file it references.
 //
-//go:embed openapi.yaml dashboard.openapi.yaml dashboard paths components
+//go:embed openapi.yaml dashboard.openapi.yaml admin.openapi.yaml
+//go:embed dashboard admin paths components
 var FS embed.FS

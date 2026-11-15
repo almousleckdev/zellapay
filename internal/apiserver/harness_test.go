@@ -95,6 +95,8 @@ func settings() wiring.Settings {
 		PasswordPepper:  secret(3), PasswordPepperVersion: 1,
 		PasswordParams: identity.Params{Memory: 8, Passes: 1, Lanes: 1},
 		DashboardURL:   "http://localhost:3001",
+		AdminURL:       "http://localhost:3002",
+		WebAuthnRPID:   "localhost",
 		TrustedProxies: []netip.Prefix{netip.MustParsePrefix("127.0.0.0/8")},
 	}
 }
