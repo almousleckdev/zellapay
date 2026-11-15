@@ -38,6 +38,26 @@ type MFARepository interface {
 	// UseRecoveryCode spends one code. It reports false if it is unknown or
 	// already spent, and returns how many codes remain.
 	UseRecoveryCode(ctx context.Context, u RecoveryUse, fx Effects) (ok bool, left int, err error)
+	// ReplaceRecoveryCodes swaps the user's codes for a new set, atomically.
+	ReplaceRecoveryCodes(ctx context.Context, r CodeReplacement, fx Effects) error
+	// RemoveMFA deletes the credential and codes, ends the user's other
+	// sessions and clears the second factor from the kept one, atomically.
+	RemoveMFA(ctx context.Context, r MFARemoval, fx Effects) error
+}
+
+// CodeReplacement is a fresh set of recovery code hashes.
+type CodeReplacement struct {
+	UserID     string
+	CodeHashes [][32]byte
+	At         time.Time
+}
+
+// MFARemoval removes a user's second factor. KeepSessionID stays signed in,
+// but must enrol again.
+type MFARemoval struct {
+	UserID        string
+	KeepSessionID string
+	At            time.Time
 }
 
 // MFACredential is a user's TOTP secret. SecretEnc is sealed.

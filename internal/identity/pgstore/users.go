@@ -51,6 +51,17 @@ func oneUser(r sqlcgen.MerchantUser, err error) (identity.User, error) {
 	return userFromRow(r), nil
 }
 
+// ChangePassword stores a new hash and ends the user's other sessions.
+func (s *Store) ChangePassword(
+	ctx context.Context, c identity.PasswordChange, fx identity.Effects,
+) error {
+	return s.inTx(ctx, fx, func(q *sqlcgen.Queries) error {
+		return setPassword(ctx, q, passwordSet{
+			UserID: c.UserID, Hash: c.PasswordHash, KeepSessionID: c.KeepSessionID, At: c.At,
+		})
+	})
+}
+
 // Rehash replaces oldHash with newHash if oldHash is still current.
 func (s *Store) Rehash(ctx context.Context, id, oldHash, newHash string) error {
 	return sqlcgen.New(s.pool).Rehash(ctx, sqlcgen.RehashParams{

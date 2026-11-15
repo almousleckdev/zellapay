@@ -30,6 +30,11 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type changePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 type codeRequest struct {
 	Code string `json:"code"`
 }
@@ -58,14 +63,16 @@ type sessionJSON struct {
 	IP          string    `json:"ip"`
 	UserAgent   string    `json:"user_agent"`
 	MFAVerified bool      `json:"mfa_verified"`
-	Current     bool      `json:"current"`
+	// MFAVerifiedAt is when the second factor was last proven, if ever.
+	MFAVerifiedAt *time.Time `json:"mfa_verified_at"`
+	Current       bool       `json:"current"`
 }
 
 func sessionView(s identity.Session, currentID string) sessionJSON {
 	return sessionJSON{
 		ID: s.ID, CreatedAt: s.CreatedAt, LastSeenAt: s.LastSeenAt,
 		ExpiresAt: s.ExpiresAt, IP: s.Source.IP, UserAgent: s.Source.UserAgent,
-		MFAVerified: s.MFAAt != nil, Current: s.ID == currentID,
+		MFAVerified: s.MFAAt != nil, MFAVerifiedAt: s.MFAAt, Current: s.ID == currentID,
 	}
 }
 

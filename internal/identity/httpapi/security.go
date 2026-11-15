@@ -37,10 +37,12 @@ func (h *Handler) ConfirmEnrolment(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, recoveryCodesResponse{RecoveryCodes: codes})
 }
 
-// allow checks the caller may manage their sessions, or writes the refusal.
-func (h *Handler) allow(w http.ResponseWriter, r *http.Request) (caller, bool) {
+// require checks the caller holds the permission, or writes the refusal.
+func (h *Handler) require(
+	w http.ResponseWriter, r *http.Request, p access.Permission,
+) (caller, bool) {
 	c, _ := callerFrom(r.Context())
-	err := h.d.Policy.Check(c.Principal, access.SessionsManage, access.Resource{}, h.d.Clock.Now())
+	err := h.d.Policy.Check(c.Principal, p, access.Resource{}, h.d.Clock.Now())
 	if err != nil {
 		h.fail(w, r, err)
 		return caller{}, false
@@ -50,7 +52,7 @@ func (h *Handler) allow(w http.ResponseWriter, r *http.Request) (caller, bool) {
 
 // ListSessions lists the caller's open sessions.
 func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
-	c, ok := h.allow(w, r)
+	c, ok := h.require(w, r, access.SessionsManage)
 	if !ok {
 		return
 	}
@@ -68,7 +70,7 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 
 // EndSession ends one of the caller's sessions.
 func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
-	c, ok := h.allow(w, r)
+	c, ok := h.require(w, r, access.SessionsManage)
 	if !ok {
 		return
 	}
@@ -81,7 +83,7 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 
 // EndOtherSessions ends every session of the caller except the current one.
 func (h *Handler) EndOtherSessions(w http.ResponseWriter, r *http.Request) {
-	c, ok := h.allow(w, r)
+	c, ok := h.require(w, r, access.SessionsManage)
 	if !ok {
 		return
 	}

@@ -184,3 +184,19 @@ func TestDashboardPasswordResetDoesNotRevealAccounts(t *testing.T) {
 		t.Fatalf("known %d %q, ghost %d %q", known.status, known.raw, ghost.status, ghost.raw)
 	}
 }
+
+func TestDashboardRecordsTheAddressTheProxyReports(t *testing.T) {
+	e := newEnv(t)
+	m := e.newMember(t)
+	body := fmt.Sprintf(`{"email":%q,"password":%q}`, m.email, dashPhrase)
+	login := e.do(request{
+		method: "POST", path: "/dashboard/session", body: body,
+		headers: map[string]string{"X-Forwarded-For": "198.51.100.7"},
+	})
+	token, _ := login.json(t)["session_token"].(string)
+	me := e.dash("GET", "/dashboard/session", token, "")
+	session, _ := me.json(t)["session"].(map[string]any)
+	if session["ip"] != "198.51.100.7" {
+		t.Fatalf("session address = %v, want the one the proxy reported", session["ip"])
+	}
+}

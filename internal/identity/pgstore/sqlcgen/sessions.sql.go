@@ -29,6 +29,15 @@ func (q *Queries) AdvanceMFAStep(ctx context.Context, arg AdvanceMFAStepParams) 
 	return result.RowsAffected(), nil
 }
 
+const clearSessionMFA = `-- name: ClearSessionMFA :exec
+UPDATE sessions SET mfa_at = NULL WHERE id = $1
+`
+
+func (q *Queries) ClearSessionMFA(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, clearSessionMFA, id)
+	return err
+}
+
 const confirmMFACredential = `-- name: ConfirmMFACredential :execrows
 UPDATE mfa_credentials SET confirmed_at = $1, last_step = $2
 WHERE user_id = $3 AND confirmed_at IS NULL
@@ -57,6 +66,15 @@ func (q *Queries) CountRecoveryCodes(ctx context.Context, userID string) (int64,
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const deleteMFACredential = `-- name: DeleteMFACredential :exec
+DELETE FROM mfa_credentials WHERE user_id = $1
+`
+
+func (q *Queries) DeleteMFACredential(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, deleteMFACredential, userID)
+	return err
 }
 
 const deleteRecoveryCodes = `-- name: DeleteRecoveryCodes :exec

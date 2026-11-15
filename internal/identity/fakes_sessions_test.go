@@ -208,3 +208,52 @@ func testBox(t *testing.T) *crypto.Sealer {
 	}
 	return box
 }
+
+func (m *memRepo) ChangePassword(_ context.Context, c PasswordChange, fx Effects) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	u := m.users[c.UserID]
+	u.PasswordHash, u.PasswordChangedAt = c.PasswordHash, c.At
+	m.users[c.UserID] = u
+	m.revokeAll(c.UserID, c.KeepSessionID, c.At)
+	m.audits = append(m.audits, fx.Audit...)
+	return nil
+}
+
+func (m *memRepo) ReplaceRecoveryCodes(_ context.Context, r CodeReplacement, fx Effects) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	kept := m.codes[:0:0]
+	for _, c := range m.codes {
+		if c.userID != r.UserID {
+			kept = append(kept, c)
+		}
+	}
+	for _, h := range r.CodeHashes {
+		kept = append(kept, &codeRow{userID: r.UserID, hash: h})
+	}
+	m.codes = kept
+	m.audits = append(m.audits, fx.Audit...)
+	return nil
+}
+
+func (m *memRepo) RemoveMFA(_ context.Context, r MFARemoval, fx Effects) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.mfa, r.UserID)
+	kept := m.codes[:0:0]
+	for _, c := range m.codes {
+		if c.userID != r.UserID {
+			kept = append(kept, c)
+		}
+	}
+	m.codes = kept
+	m.revokeAll(r.UserID, r.KeepSessionID, r.At)
+	for _, s := range m.sessions {
+		if s.ID == r.KeepSessionID {
+			s.MFAAt = nil
+		}
+	}
+	m.audits = append(m.audits, fx.Audit...)
+	return nil
+}

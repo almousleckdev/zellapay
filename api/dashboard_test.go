@@ -39,8 +39,8 @@ func dashboardRoutes(t *testing.T) []route {
 }
 
 func TestDashboardSpecBuildsWithAllReferencesResolved(t *testing.T) {
-	if n := loadFile(t, dashboardSpec).Paths.PathItems.Len(); n != 11 {
-		t.Fatalf("paths = %d, want 11", n)
+	if n := loadFile(t, dashboardSpec).Paths.PathItems.Len(); n != 14 {
+		t.Fatalf("paths = %d, want 14", n)
 	}
 }
 

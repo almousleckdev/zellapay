@@ -35,6 +35,9 @@ type Repository interface {
 	FindUser(ctx context.Context, id string) (User, error)
 	// Rehash replaces oldHash with newHash, only if oldHash is still current.
 	Rehash(ctx context.Context, id, oldHash, newHash string) error
+	// ChangePassword stores a new password hash and ends the user's other
+	// sessions, atomically.
+	ChangePassword(ctx context.Context, c PasswordChange, fx Effects) error
 
 	// CreateEmailToken replaces any open token of the same purpose.
 	CreateEmailToken(ctx context.Context, t EmailToken, fx Effects) error
@@ -42,6 +45,14 @@ type Repository interface {
 	FindEmailToken(ctx context.Context, p Purpose, hash [32]byte) (EmailToken, error)
 	// UseEmailToken marks the token used and applies the change it allows.
 	UseEmailToken(ctx context.Context, use TokenUse, fx Effects) error
+}
+
+// PasswordChange sets a new password and ends every session but KeepSession.
+type PasswordChange struct {
+	UserID        string
+	PasswordHash  string
+	KeepSessionID string
+	At            time.Time
 }
 
 // Acceptance is the consumption of an invitation and the account it creates.

@@ -90,6 +90,7 @@ Session:
     - ip
     - user_agent
     - mfa_verified
+    - mfa_verified_at
     - current
   properties:
     id: {type: string}
@@ -102,6 +103,10 @@ Session:
     ip: {type: string}
     user_agent: {type: string}
     mfa_verified: {type: boolean}
+    mfa_verified_at:
+      type: [string, 'null']
+      format: date-time
+      description: When the second factor was last proven. Sensitive actions need it within 10 minutes.
     current: {type: boolean}
 Current:
   type: object
@@ -151,3 +156,14 @@ Ended:
   required: [ended]
   properties:
     ended: {type: integer, minimum: 0}
+ChangePassword:
+  type: object
+  additionalProperties: false
+  required: [current_password, new_password]
+  properties:
+    current_password: {type: string, maxLength: 128, writeOnly: true}
+    new_password:
+      type: string
+      minLength: 12
+      maxLength: 128
+      writeOnly: true

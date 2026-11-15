@@ -38,6 +38,18 @@ func (w *world) login(t *testing.T) identity.Issued {
 	return s
 }
 
+// recovery returns an unused recovery code, taken from a fresh enrolment.
+func (w *world) recovery(t *testing.T) string {
+	t.Helper()
+	w.exec(t, "DELETE FROM recovery_codes")
+	s := w.login(t)
+	codes, err := w.sessions.RegenerateRecoveryCodes(context.Background(), s.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return codes[0]
+}
+
 // enrol sets MFA up and returns the secret and the recovery codes.
 func (w *world) enrol(t *testing.T) ([]byte, []string) {
 	t.Helper()

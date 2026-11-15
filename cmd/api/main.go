@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/zellapay/zellapay/internal/apiserver"
+	"github.com/zellapay/zellapay/internal/merchants/httpauth"
 	"github.com/zellapay/zellapay/internal/platform/app"
 	"github.com/zellapay/zellapay/internal/platform/config"
 	"github.com/zellapay/zellapay/internal/platform/logging"
@@ -47,8 +48,11 @@ func run() error {
 	}
 
 	srv := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           apiserver.New(c, apiserver.Options{DocsEnabled: cfg.DocsEnabled}, log),
+		Addr: cfg.HTTPAddr,
+		Handler: apiserver.New(c, apiserver.Options{
+			DocsEnabled: cfg.DocsEnabled,
+			ClientIP:    httpauth.Forwarded(c.Settings.TrustedProxies),
+		}, log),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

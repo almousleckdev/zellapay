@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/zellapay/zellapay/internal/apiserver"
 	"github.com/zellapay/zellapay/internal/identity"
 	"github.com/zellapay/zellapay/internal/merchants"
+	"github.com/zellapay/zellapay/internal/merchants/httpauth"
 	"github.com/zellapay/zellapay/internal/operators/simulator"
 	"github.com/zellapay/zellapay/internal/platform/ids"
 	"github.com/zellapay/zellapay/internal/webhooks"
@@ -71,7 +73,9 @@ func newEnv(t *testing.T) *env {
 		key:      e.issue(e.main.merchant, merchants.ScopeRead),
 	}
 	e.other = e.newAccount(0, merchants.ScopeRead, merchants.ScopeCollectionsWrite)
-	e.srv = httptest.NewServer(apiserver.New(c, apiserver.Options{}, log))
+	e.srv = httptest.NewServer(apiserver.New(c, apiserver.Options{
+		ClientIP: httpauth.Forwarded(settings().TrustedProxies),
+	}, log))
 	t.Cleanup(func() { e.srv.Close(); c.Close() })
 	return e
 }
@@ -91,6 +95,7 @@ func settings() wiring.Settings {
 		PasswordPepper:  secret(3), PasswordPepperVersion: 1,
 		PasswordParams: identity.Params{Memory: 8, Passes: 1, Lanes: 1},
 		DashboardURL:   "http://localhost:3001",
+		TrustedProxies: []netip.Prefix{netip.MustParsePrefix("127.0.0.0/8")},
 	}
 }
 
@@ -146,6 +151,7 @@ func (r response) errorCode(t *testing.T) string {
 
 type request struct {
 	method, path, key, idemKey, body string
+	headers                          map[string]string
 }
 
 func (e *env) do(r request) response {
@@ -157,6 +163,9 @@ func (e *env) do(r request) response {
 	}
 	if r.key != "" {
 		req.Header.Set("Authorization", "Bearer "+r.key)
+	}
+	for name, value := range r.headers {
+		req.Header.Set(name, value)
 	}
 	if r.idemKey != "" {
 		req.Header.Set("Idempotency-Key", r.idemKey)

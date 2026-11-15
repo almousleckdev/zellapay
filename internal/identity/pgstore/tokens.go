@@ -3,6 +3,7 @@ package pgstore
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -63,7 +64,9 @@ func (s *Store) UseEmailToken(
 			return err
 		}
 		if use.NewPasswordHash != "" {
-			if err := changePassword(ctx, q, use); err != nil {
+			if err := setPassword(ctx, q, passwordSet{
+				UserID: use.UserID, Hash: use.NewPasswordHash, At: use.At,
+			}); err != nil {
 				return err
 			}
 		}
@@ -73,17 +76,23 @@ func (s *Store) UseEmailToken(
 	})
 }
 
-// changePassword sets the new password and ends every session: whoever held
-// one, including a thief, is signed out.
-func changePassword(ctx context.Context, q *sqlcgen.Queries, use identity.TokenUse) error {
+// passwordSet is a new password and the one session allowed to survive it.
+type passwordSet struct {
+	UserID, Hash, KeepSessionID string
+	At                          time.Time
+}
+
+// setPassword stores the hash and ends every session except the kept one:
+// whoever held another, including a thief, is signed out.
+func setPassword(ctx context.Context, q *sqlcgen.Queries, p passwordSet) error {
 	err := q.SetPassword(ctx, sqlcgen.SetPasswordParams{
-		ID: use.UserID, PasswordHash: use.NewPasswordHash, ChangedAt: ts(use.At),
+		ID: p.UserID, PasswordHash: p.Hash, ChangedAt: ts(p.At),
 	})
 	if err != nil {
 		return err
 	}
 	_, err = q.RevokeUserSessions(ctx, sqlcgen.RevokeUserSessionsParams{
-		UserID: use.UserID, At: ts(use.At),
+		UserID: p.UserID, KeepID: p.KeepSessionID, At: ts(p.At),
 	})
 	return err
 }

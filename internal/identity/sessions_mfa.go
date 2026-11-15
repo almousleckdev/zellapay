@@ -12,15 +12,17 @@ type MFAInput struct {
 	IP    string
 }
 
-// CompleteMFA proves the second factor for a session. Wrong answers are
-// counted per user, so guessing six digits is slowed down.
+// CompleteMFA proves the second factor for a session, at sign-in or later.
+// Wrong answers are counted per user, so guessing six digits is slowed down.
 func (s *Sessions) CompleteMFA(ctx context.Context, in MFAInput) (Verification, error) {
 	p, err := s.Resolve(ctx, in.Token)
 	if err != nil {
 		return Verification{}, err
 	}
-	if p.MFA != MFARequired {
-		return Verification{}, invalid("mfa is not pending for this session")
+	// A session that already passed MFA may answer again: that is how it
+	// proves a recent second factor before a sensitive action.
+	if p.MFA != MFARequired && p.MFA != MFADone {
+		return Verification{}, invalid("mfa cannot be answered for this session")
 	}
 	a := Attempt{Realm: RealmMFA, Account: p.User.ID, IP: in.IP}
 	if err := s.guard(ctx, a); err != nil {

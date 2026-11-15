@@ -109,3 +109,73 @@ endOthers:
         $ref: ./responses.yaml#/Unauthorized
       '403':
         $ref: ./responses.yaml#/Forbidden
+changePassword:
+  post:
+    tags: [Security]
+    operationId: changePassword
+    summary: Change your password
+    description: |
+      Checks the current password (throttled like a sign-in), applies the
+      password policy and ends every other session. Needs a recent second
+      factor: otherwise `403 step_up_required`, answered by
+      `POST /dashboard/session/mfa`.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/ChangePassword
+    responses:
+      '204':
+        description: The password changed and other sessions ended.
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+      '422':
+        $ref: ./responses.yaml#/WeakPassword
+      '429':
+        $ref: ./responses.yaml#/TooManyAttempts
+regenerateCodes:
+  post:
+    tags: [Security]
+    operationId: regenerateRecoveryCodes
+    summary: Replace your recovery codes
+    description: |
+      The old codes stop working. The new ones are returned once. Needs a
+      recent second factor.
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: Ten new recovery codes.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/RecoveryCodes
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+removeMfa:
+  delete:
+    tags: [Security]
+    operationId: removeAuthenticator
+    summary: Remove your authenticator
+    description: |
+      Deletes the authenticator and recovery codes and ends every other
+      session. This session stays signed in with `mfa: enrol_required`, so
+      the user sets up a new authenticator. Needs a recent second factor.
+    security:
+      - sessionAuth: []
+    responses:
+      '204':
+        description: The authenticator was removed.
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden

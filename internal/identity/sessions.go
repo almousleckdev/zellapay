@@ -11,9 +11,10 @@ import (
 	"github.com/zellapay/zellapay/internal/platform/ids"
 )
 
-// Authenticator checks an email and a password.
-type Authenticator interface {
+// Accounts checks passwords and changes them.
+type Accounts interface {
 	Authenticate(ctx context.Context, email, password string) (User, error)
+	ChangePassword(ctx context.Context, in ChangePasswordInput) error
 }
 
 // SecondFactor enrols and checks the user's second factor.
@@ -22,13 +23,15 @@ type SecondFactor interface {
 	BeginEnrolment(ctx context.Context, userID string) (Enrolment, error)
 	ConfirmEnrolment(ctx context.Context, userID, code string) ([]string, error)
 	Verify(ctx context.Context, userID, code string) (Verification, error)
+	RegenerateRecoveryCodes(ctx context.Context, userID string) ([]string, error)
+	Remove(ctx context.Context, userID, keepSessionID string) error
 }
 
 // SessionDeps are the collaborators of the Sessions service.
 type SessionDeps struct {
 	Repo     SessionRepository
 	Users    UserLookup
-	Accounts Authenticator
+	Accounts Accounts
 	Factor   SecondFactor
 	Throttle Throttle
 	Clock    clock.Clock

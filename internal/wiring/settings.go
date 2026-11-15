@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/netip"
 	"os"
 	"strconv"
 	"strings"
@@ -40,6 +41,8 @@ type Settings struct {
 	// DashboardURL is the merchant dashboard's public address; emailed
 	// links start with it.
 	DashboardURL string
+	// TrustedProxies are the networks whose X-Forwarded-For is believed.
+	TrustedProxies []netip.Prefix
 
 	SimulatorEnabled bool
 	SimulatorSecret  []byte
@@ -88,7 +91,7 @@ func SettingsFromEnv() (Settings, error) {
 	s.BlindIndexKey, err = secretFromEnv("ZP_BLIND_INDEX_KEY")
 	errs = append(errs, err)
 	errs = append(errs, s.loadSimulator(), s.loadWebhookPolicy(), s.loadLimits(),
-		s.loadMail(), s.loadIdentity())
+		s.loadMail(), s.loadIdentity(), s.loadTrustedProxies())
 	if err := errors.Join(errs...); err != nil {
 		return Settings{}, fmt.Errorf("invalid configuration: %w", err)
 	}

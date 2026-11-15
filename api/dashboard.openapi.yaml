@@ -58,6 +58,12 @@ paths:
     $ref: ./dashboard/security.yaml#/enrolment
   /dashboard/mfa/enrolment/confirm:
     $ref: ./dashboard/security.yaml#/confirm
+  /dashboard/password/change:
+    $ref: ./dashboard/security.yaml#/changePassword
+  /dashboard/mfa:
+    $ref: ./dashboard/security.yaml#/removeMfa
+  /dashboard/mfa/recovery-codes:
+    $ref: ./dashboard/security.yaml#/regenerateCodes
   /dashboard/sessions:
     $ref: ./dashboard/security.yaml#/sessions
   /dashboard/sessions/{session_id}:

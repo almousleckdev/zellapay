@@ -44,6 +44,41 @@ type Enrolment struct {
 	URI       string
 }
 
+// RegenerateRecoveryCodes replaces the user's recovery codes. The old ones
+// stop working. The new ones are returned once.
+func (m *MFA) RegenerateRecoveryCodes(ctx context.Context, userID string) ([]string, error) {
+	if on, err := m.Enrolled(ctx, userID); err != nil || !on {
+		if err == nil {
+			err = ErrNoEnrolment
+		}
+		return nil, err
+	}
+	shown, hashes, err := newRecoveryCodes()
+	if err != nil {
+		return nil, err
+	}
+	fx, err := m.effect("mfa.recovery_codes_regenerated", userID)
+	if err != nil {
+		return nil, err
+	}
+	err = m.d.Repo.ReplaceRecoveryCodes(ctx, CodeReplacement{
+		UserID: userID, CodeHashes: hashes, At: m.d.Clock.Now(),
+	}, fx)
+	return shown, err
+}
+
+// Remove deletes the user's authenticator and recovery codes. The user must
+// enrol again before doing anything else. keepSessionID stays signed in.
+func (m *MFA) Remove(ctx context.Context, userID, keepSessionID string) error {
+	fx, err := m.effect("mfa.removed", userID)
+	if err != nil {
+		return err
+	}
+	return m.d.Repo.RemoveMFA(ctx, MFARemoval{
+		UserID: userID, KeepSessionID: keepSessionID, At: m.d.Clock.Now(),
+	}, fx)
+}
+
 func secretContext(userID string) []byte { return []byte("mfa:" + userID + ":secret") }
 
 // Enrolled reports whether the user has an active second factor.

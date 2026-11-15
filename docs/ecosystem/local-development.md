@@ -70,3 +70,13 @@ directory so their `CLAUDE.md` rules apply.
 
 The operator simulator selects an outcome from the last two digits of the
 phone number. See `docs/simulator.md` in the backend repository.
+
+## Client addresses and trusted proxies
+
+The API believes `X-Forwarded-For` only from the networks in
+`ZP_TRUSTED_PROXIES` (CIDR ranges). Locally it trusts loopback, so a dashboard
+on the same machine can report its users' addresses. Production trusts nobody
+until you list the load balancer and dashboard ranges; `0.0.0.0/0` is
+refused. The dashboard sends the address from the header named by its
+`CLIENT_IP_HEADER`. The API uses the result for per-address throttling, API
+key allowlists and the session list.

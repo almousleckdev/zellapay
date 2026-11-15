@@ -3,6 +3,7 @@ package pgstore
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -57,15 +58,7 @@ func (s *Store) Confirm(
 		if err := q.DeleteRecoveryCodes(ctx, c.UserID); err != nil {
 			return err
 		}
-		for _, h := range c.CodeHashes {
-			err := q.InsertRecoveryCode(ctx, sqlcgen.InsertRecoveryCodeParams{
-				ID: ids.New("rcv_"), UserID: c.UserID, CodeHash: h[:], CreatedAt: ts(c.At),
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return insertCodes(ctx, q, codeSet{c.UserID, c.CodeHashes, c.At})
 	})
 }
 
@@ -103,4 +96,54 @@ func (s *Store) UseRecoveryCode(
 		return false, 0, err
 	}
 	return ok, left, nil
+}
+
+// ReplaceRecoveryCodes swaps the user's recovery codes for a new set.
+func (s *Store) ReplaceRecoveryCodes(
+	ctx context.Context, r identity.CodeReplacement, fx identity.Effects,
+) error {
+	return s.inTx(ctx, fx, func(q *sqlcgen.Queries) error {
+		if err := q.DeleteRecoveryCodes(ctx, r.UserID); err != nil {
+			return err
+		}
+		return insertCodes(ctx, q, codeSet{r.UserID, r.CodeHashes, r.At})
+	})
+}
+
+// RemoveMFA deletes the user's second factor. Their other sessions end, and
+// the kept one loses its proof of the second factor.
+func (s *Store) RemoveMFA(ctx context.Context, r identity.MFARemoval, fx identity.Effects) error {
+	return s.inTx(ctx, fx, func(q *sqlcgen.Queries) error {
+		if err := q.DeleteRecoveryCodes(ctx, r.UserID); err != nil {
+			return err
+		}
+		if err := q.DeleteMFACredential(ctx, r.UserID); err != nil {
+			return err
+		}
+		if _, err := q.RevokeUserSessions(ctx, sqlcgen.RevokeUserSessionsParams{
+			UserID: r.UserID, KeepID: r.KeepSessionID, At: ts(r.At),
+		}); err != nil {
+			return err
+		}
+		return q.ClearSessionMFA(ctx, r.KeepSessionID)
+	})
+}
+
+// codeSet is a user's recovery code hashes, stored together.
+type codeSet struct {
+	UserID string
+	Hashes [][32]byte
+	At     time.Time
+}
+
+func insertCodes(ctx context.Context, q *sqlcgen.Queries, set codeSet) error {
+	for _, h := range set.Hashes {
+		err := q.InsertRecoveryCode(ctx, sqlcgen.InsertRecoveryCodeParams{
+			ID: ids.New("rcv_"), UserID: set.UserID, CodeHash: h[:], CreatedAt: ts(set.At),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

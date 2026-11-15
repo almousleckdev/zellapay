@@ -37,6 +37,9 @@ type Sessions interface {
 	List(ctx context.Context, userID string) ([]identity.Session, error)
 	End(ctx context.Context, userID, sessionID string) error
 	EndOthers(ctx context.Context, userID, keepID string) (int, error)
+	ChangePassword(ctx context.Context, in identity.PasswordChangeInput) error
+	RegenerateRecoveryCodes(ctx context.Context, token string) ([]string, error)
+	RemoveAuthenticator(ctx context.Context, token string) error
 }
 
 // Policy decides whether a principal may act.

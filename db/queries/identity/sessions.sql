@@ -58,3 +58,9 @@ WHERE user_id = @user_id AND code_hash = @code_hash AND used_at IS NULL;
 
 -- name: CountRecoveryCodes :one
 SELECT count(*) FROM recovery_codes WHERE user_id = @user_id AND used_at IS NULL;
+
+-- name: DeleteMFACredential :exec
+DELETE FROM mfa_credentials WHERE user_id = @user_id;
+
+-- name: ClearSessionMFA :exec
+UPDATE sessions SET mfa_at = NULL WHERE id = @id;

@@ -26,4 +26,7 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 	session("GET /dashboard/sessions", h.ListSessions)
 	session("DELETE /dashboard/sessions/{id}", h.EndSession)
 	session("POST /dashboard/sessions/end-others", h.EndOtherSessions)
+	session("POST /dashboard/password/change", h.ChangePassword)
+	session("POST /dashboard/mfa/recovery-codes", h.RegenerateRecoveryCodes)
+	session("DELETE /dashboard/mfa", h.RemoveAuthenticator)
 }
