@@ -1,0 +1,86 @@
+acceptInvitation:
+  post:
+    tags: [Accounts]
+    operationId: acceptInvitation
+    summary: Create an account from an invitation link
+    description: |
+      The link proves the person controls the inbox, so the email counts as
+      verified. The password must be 12 to 128 characters and not a common
+      password.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/AcceptInvitation
+    responses:
+      '201':
+        description: The account was created.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/User
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '409':
+        $ref: ./responses.yaml#/AccountExists
+      '422':
+        $ref: ./responses.yaml#/WeakPassword
+verifyEmail:
+  post:
+    tags: [Accounts]
+    operationId: verifyEmail
+    summary: Confirm an email address from a verification link
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/Token
+    responses:
+      '204':
+        description: The address is verified.
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+resetRequest:
+  post:
+    tags: [Accounts]
+    operationId: requestPasswordReset
+    summary: Email a password reset link
+    description: |
+      Always answers `202`, whether or not the address has an account, so it
+      cannot be used to find out who has one.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/EmailOnly
+    responses:
+      '202':
+        description: If the address has an account, a link was sent.
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+resetPassword:
+  post:
+    tags: [Accounts]
+    operationId: resetPassword
+    summary: Set a new password from a reset link
+    description: Ends every session of the user. Does not bypass the second factor.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/ResetPassword
+    responses:
+      '204':
+        description: The password was changed and all sessions ended.
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '422':
+        $ref: ./responses.yaml#/WeakPassword

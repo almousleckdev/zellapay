@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: ZellaPay Dashboard API
+  version: 1.0.0
+  summary: Account and security routes used by the merchant dashboard.
+  description: |
+    These routes are called only by the dashboard's own server, never by a
+    browser and never by merchant integrations (they use the `/v1` API).
+
+    ## Sessions
+    `POST /dashboard/session` returns an opaque session token. The dashboard
+    server keeps it in an encrypted `HttpOnly` cookie and sends it here as a
+    bearer token. A new session has not passed the second factor: its `mfa`
+    state says whether to enrol (`enrol_required`), ask for a code
+    (`required`) or carry on (`done`).
+
+    ## No idempotency keys
+    Unlike `/v1`, these `POST` routes take no `Idempotency-Key`. Caching a
+    response would store session tokens and recovery codes. Each link or code
+    is single use instead, so a replay is refused.
+
+    ## Caching
+    Every response is `Cache-Control: no-store`.
+
+    ## Client address
+    Throttling and the session list use the end user's address. The server
+    reads it from the proxy header it is configured to trust, never from the
+    request body.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://sandbox.api.zellapay.example
+    description: Sandbox
+  - url: https://api.zellapay.example
+    description: Production
+tags:
+  - name: Accounts
+    description: Invitations, email verification and password reset. No session.
+  - name: Session
+    description: Sign in, second factor and sign out.
+  - name: Security
+    description: Authenticator enrolment and the user's own sessions.
+paths:
+  /dashboard/invitations/accept:
+    $ref: ./dashboard/accounts.yaml#/acceptInvitation
+  /dashboard/email/verify:
+    $ref: ./dashboard/accounts.yaml#/verifyEmail
+  /dashboard/password/reset-request:
+    $ref: ./dashboard/accounts.yaml#/resetRequest
+  /dashboard/password/reset:
+    $ref: ./dashboard/accounts.yaml#/resetPassword
+  /dashboard/session:
+    $ref: ./dashboard/session.yaml#/session
+  /dashboard/session/mfa:
+    $ref: ./dashboard/session.yaml#/mfa
+  /dashboard/mfa/enrolment:
+    $ref: ./dashboard/security.yaml#/enrolment
+  /dashboard/mfa/enrolment/confirm:
+    $ref: ./dashboard/security.yaml#/confirm
+  /dashboard/sessions:
+    $ref: ./dashboard/security.yaml#/sessions
+  /dashboard/sessions/{session_id}:
+    $ref: ./dashboard/security.yaml#/sessionById
+  /dashboard/sessions/end-others:
+    $ref: ./dashboard/security.yaml#/endOthers
+components:
+  securitySchemes:
+    sessionAuth:
+      type: http
+      scheme: bearer
+      description: The opaque session token returned by `POST /dashboard/session`.

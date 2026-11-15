@@ -1,0 +1,153 @@
+Token:
+  type: object
+  additionalProperties: false
+  required: [token]
+  properties:
+    token:
+      type: string
+      description: The token from the emailed link.
+AcceptInvitation:
+  type: object
+  additionalProperties: false
+  required: [token, name, password]
+  properties:
+    token: {type: string}
+    name: {type: string, minLength: 1, maxLength: 100}
+    password:
+      type: string
+      minLength: 12
+      maxLength: 128
+      writeOnly: true
+EmailOnly:
+  type: object
+  additionalProperties: false
+  required: [email]
+  properties:
+    email: {type: string, format: email, maxLength: 254}
+ResetPassword:
+  type: object
+  additionalProperties: false
+  required: [token, new_password]
+  properties:
+    token: {type: string}
+    new_password:
+      type: string
+      minLength: 12
+      maxLength: 128
+      writeOnly: true
+SignIn:
+  type: object
+  additionalProperties: false
+  required: [email, password]
+  properties:
+    email: {type: string, format: email, maxLength: 254}
+    password: {type: string, maxLength: 128, writeOnly: true}
+Code:
+  type: object
+  additionalProperties: false
+  required: [code]
+  properties:
+    code:
+      type: string
+      description: |
+        A six-digit authenticator code, or a recovery code such as
+        `ABCD-EFGH-JKLM-NPQR`.
+User:
+  type: object
+  required: [id, merchant_id, email, name, role, email_verified]
+  properties:
+    id: {type: string}
+    merchant_id: {type: string}
+    email: {type: string, format: email}
+    name: {type: string}
+    role:
+      type: string
+      enum: [owner, admin, developer, finance, support]
+    email_verified: {type: boolean}
+MFAState:
+  type: string
+  enum: [enrol_required, required, done]
+  description: |
+    `enrol_required`: set up an authenticator app. `required`: enter a code.
+    `done`: the second factor was proven for this session.
+SignedIn:
+  type: object
+  required: [session_token, expires_at, mfa]
+  properties:
+    session_token:
+      type: string
+      description: Keep it on the server. It is shown only here.
+    expires_at: {type: string, format: date-time}
+    mfa:
+      $ref: '#/MFAState'
+Session:
+  type: object
+  required:
+    - id
+    - created_at
+    - last_seen_at
+    - expires_at
+    - ip
+    - user_agent
+    - mfa_verified
+    - current
+  properties:
+    id: {type: string}
+    created_at: {type: string, format: date-time}
+    last_seen_at: {type: string, format: date-time}
+    expires_at:
+      type: string
+      format: date-time
+      description: The absolute limit, whatever the activity.
+    ip: {type: string}
+    user_agent: {type: string}
+    mfa_verified: {type: boolean}
+    current: {type: boolean}
+Current:
+  type: object
+  required: [user, session, mfa]
+  properties:
+    user:
+      $ref: '#/User'
+    session:
+      $ref: '#/Session'
+    mfa:
+      $ref: '#/MFAState'
+SessionList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Session'
+MFAResult:
+  type: object
+  required: [recovery_code_used, recovery_codes_left]
+  properties:
+    recovery_code_used:
+      type: boolean
+      description: |
+        True when a recovery code was spent. Ask the user to set up their
+        authenticator again.
+    recovery_codes_left: {type: integer}
+Enrolment:
+  type: object
+  required: [manual_key, otpauth_uri]
+  properties:
+    manual_key: {type: string, description: Base32 secret for manual entry.}
+    otpauth_uri: {type: string, description: Encode as a QR code.}
+RecoveryCodes:
+  type: object
+  required: [recovery_codes]
+  properties:
+    recovery_codes:
+      type: array
+      minItems: 10
+      maxItems: 10
+      items: {type: string}
+Ended:
+  type: object
+  required: [ended]
+  properties:
+    ended: {type: integer, minimum: 0}

@@ -1,0 +1,103 @@
+BadRequest:
+  description: 'The request is malformed or fails validation, or a link is invalid.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_request
+          message: 'The request body must be one valid JSON object with known fields.'
+          request_id: 9f2c1a7e4b3d
+Unauthorized:
+  description: 'The session is missing, expired or ended.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_session
+          message: 'The session is missing, expired or ended.'
+          request_id: 9f2c1a7e4b3d
+InvalidCredentials:
+  description: 'The email or password is incorrect.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_credentials
+          message: 'The email or password is incorrect.'
+          request_id: 9f2c1a7e4b3d
+Forbidden:
+  description: 'Not allowed: the second factor is not complete, a recent code is needed (`step_up_required`), or the role does not allow it.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: mfa_required
+          message: 'Complete the second factor first.'
+          request_id: 9f2c1a7e4b3d
+NotFound:
+  description: 'No such session for this user.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: not_found
+          message: 'No such session.'
+          request_id: 9f2c1a7e4b3d
+AccountExists:
+  description: 'An account already exists for this email.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: account_exists
+          message: 'An account already exists for this email.'
+          request_id: 9f2c1a7e4b3d
+WeakPassword:
+  description: 'The password does not meet the policy.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: weak_password
+          message: 'password does not meet the policy: too short'
+          request_id: 9f2c1a7e4b3d
+InvalidCode:
+  description: 'The code is incorrect or was already used.'
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: invalid_code
+          message: 'The code is incorrect or was already used.'
+          request_id: 9f2c1a7e4b3d
+TooManyAttempts:
+  description: 'Too many attempts. Wait for `Retry-After` seconds.'
+  headers:
+    Retry-After:
+      schema:
+        type: integer
+  content:
+    application/json:
+      schema:
+        $ref: ../components/schemas/common.yaml#/Error
+      example:
+        error:
+          code: too_many_attempts
+          message: 'Too many attempts. Try again later.'
+          request_id: 9f2c1a7e4b3d

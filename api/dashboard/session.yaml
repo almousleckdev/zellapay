@@ -1,0 +1,85 @@
+session:
+  post:
+    tags: [Session]
+    operationId: signIn
+    summary: Sign in with email and password
+    description: |
+      After repeated failures for an account or from an address the answer is
+      `429` with `Retry-After`, even if the password is right.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/SignIn
+    responses:
+      '201':
+        description: A session was opened. Check `mfa` for what it needs next.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/SignedIn
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/InvalidCredentials
+      '429':
+        $ref: ./responses.yaml#/TooManyAttempts
+  get:
+    tags: [Session]
+    operationId: getSession
+    summary: Describe the signed-in user and session
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: The current user and session.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/Current
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+  delete:
+    tags: [Session]
+    operationId: signOut
+    summary: End the current session
+    security:
+      - sessionAuth: []
+    responses:
+      '204':
+        description: The session ended.
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+mfa:
+  post:
+    tags: [Session]
+    operationId: verifySecondFactor
+    summary: Prove the second factor for this session
+    description: |
+      Accepts a six-digit authenticator code or a recovery code. A code works
+      once. Wrong answers are counted per user.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/Code
+    responses:
+      '200':
+        description: The second factor is proven.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/MFAResult
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '422':
+        $ref: ./responses.yaml#/InvalidCode
+      '429':
+        $ref: ./responses.yaml#/TooManyAttempts

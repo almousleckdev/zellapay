@@ -1,0 +1,111 @@
+enrolment:
+  post:
+    tags: [Security]
+    operationId: beginMfaEnrolment
+    summary: Start setting up an authenticator app
+    description: Only for a session whose user has not enrolled yet.
+    security:
+      - sessionAuth: []
+    responses:
+      '201':
+        description: Scan the URI as a QR code, or type the manual key.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/Enrolment
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+confirm:
+  post:
+    tags: [Security]
+    operationId: confirmMfaEnrolment
+    summary: Finish setup with the first code
+    description: |
+      Returns ten recovery codes. They are shown only this once, so the
+      dashboard must show them in a dialog and never store them.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas.yaml#/Code
+    responses:
+      '200':
+        description: The second factor is active and this session has proven it.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/RecoveryCodes
+      '400':
+        $ref: ./responses.yaml#/BadRequest
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+      '422':
+        $ref: ./responses.yaml#/InvalidCode
+      '429':
+        $ref: ./responses.yaml#/TooManyAttempts
+sessions:
+  get:
+    tags: [Security]
+    operationId: listSessions
+    summary: List your open sessions
+    description: Needs a session that has proven the second factor.
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: Open sessions, most recently used first.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/SessionList
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+sessionById:
+  parameters:
+    - name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+  delete:
+    tags: [Security]
+    operationId: endSession
+    summary: End one of your sessions
+    security:
+      - sessionAuth: []
+    responses:
+      '204':
+        description: The session ended.
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden
+      '404':
+        $ref: ./responses.yaml#/NotFound
+endOthers:
+  post:
+    tags: [Security]
+    operationId: endOtherSessions
+    summary: End every session except this one
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: How many sessions ended.
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/Ended
+      '401':
+        $ref: ./responses.yaml#/Unauthorized
+      '403':
+        $ref: ./responses.yaml#/Forbidden

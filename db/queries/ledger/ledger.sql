@@ -52,7 +52,7 @@ SELECT a.type,
 -- name: EnsureAccount :exec
 INSERT INTO ledger_accounts (id, code, type, currency, allow_overdraft)
 VALUES (@id, @code, @type, @currency, @allow_overdraft)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- name: GetAccount :one
 SELECT id, type, currency, allow_overdraft

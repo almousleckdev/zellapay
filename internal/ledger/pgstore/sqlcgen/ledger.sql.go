@@ -98,7 +98,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) er
 const ensureAccount = `-- name: EnsureAccount :exec
 INSERT INTO ledger_accounts (id, code, type, currency, allow_overdraft)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (id) DO NOTHING
+ON CONFLICT DO NOTHING
 `
 
 type EnsureAccountParams struct {

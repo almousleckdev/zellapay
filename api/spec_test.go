@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,13 +11,15 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
-func loadModel(t *testing.T) *v3.Document {
+func loadModel(t *testing.T) *v3.Document { return loadFile(t, "openapi.yaml") }
+
+func loadFile(t *testing.T, name string) *v3.Document {
 	t.Helper()
-	abs, err := filepath.Abs("openapi.yaml")
+	abs, err := filepath.Abs(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := os.ReadFile("openapi.yaml")
+	raw, err := fs.ReadFile(os.DirFS("."), name)
 	if err != nil {
 		t.Fatal(err)
 	}

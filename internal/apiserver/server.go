@@ -5,8 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/zellapay/zellapay/internal/access"
 	"github.com/zellapay/zellapay/internal/apidocs"
 	"github.com/zellapay/zellapay/internal/collections/httpapi"
+	identityapi "github.com/zellapay/zellapay/internal/identity/httpapi"
 	"github.com/zellapay/zellapay/internal/merchants"
 	"github.com/zellapay/zellapay/internal/merchants/httpauth"
 	payoutsapi "github.com/zellapay/zellapay/internal/payouts/httpapi"
@@ -37,6 +39,7 @@ func New(c *wiring.Container, opts Options, log *slog.Logger) http.Handler {
 	mountCollections(mux, c, opts, log)
 	mountPayouts(mux, c, opts, log)
 	mountWebhooks(mux, c, opts, log)
+	mountDashboard(mux, c, opts, log)
 	return httpx.Middleware(log, mux)
 }
 
@@ -81,4 +84,20 @@ func mountPayouts(mux *http.ServeMux, c *wiring.Container, opts Options, log *sl
 		Write:        httpauth.RequireScope(merchants.ScopePayoutsWrite),
 		Idempotent:   idempotent(c, log),
 	})
+}
+
+// mountDashboard serves the account and security routes of the merchant
+// dashboard. Only the dashboard's own server is meant to call them.
+func mountDashboard(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog.Logger) {
+	identityapi.New(identityapi.Deps{
+		Accounts: c.Identity, Sessions: c.Sessions,
+		Policy: access.NewPolicy(access.DefaultConfig()), Clock: c.Clock,
+		ClientIP: func(r *http.Request) string {
+			if addr := opts.ClientIP(r); addr.IsValid() {
+				return addr.String()
+			}
+			return ""
+		},
+		Log: log,
+	}).Mount(mux)
 }
