@@ -28,22 +28,12 @@ func Middleware(log *slog.Logger, next http.Handler) http.Handler {
 			id = newID()
 		}
 		w.Header().Set("X-Request-ID", id)
-		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		rec := newStatusRecorder(w)
 		start := time.Now()
 		next.ServeHTTP(rec, r.WithContext(context.WithValue(r.Context(), ctxKey{}, id)))
 		log.Info("request", "request_id", id, "method", r.Method, "path", r.URL.Path,
 			"status", rec.status, "duration_ms", time.Since(start).Milliseconds())
 	})
-}
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status int
-}
-
-func (s *statusRecorder) WriteHeader(code int) {
-	s.status = code
-	s.ResponseWriter.WriteHeader(code)
 }
 
 func newID() string {

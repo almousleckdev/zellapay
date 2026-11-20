@@ -76,3 +76,15 @@ SELECT id, name, status, kyc_status, default_currency, created_at
 UPDATE merchants
    SET status = @to_status, updated_at = @now
  WHERE id = @id AND status = @from_status;
+
+-- name: CountMerchantsByStatus :many
+SELECT status, count(*)::int AS n
+  FROM merchants
+ GROUP BY status;
+
+-- name: CountMerchantsCreatedPerDay :many
+SELECT (created_at AT TIME ZONE 'Africa/Libreville')::date AS day, count(*)::int AS n
+  FROM merchants
+ WHERE created_at >= @since
+ GROUP BY 1
+ ORDER BY 1;

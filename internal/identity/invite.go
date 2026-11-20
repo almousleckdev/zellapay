@@ -17,6 +17,10 @@ type InviteInput struct {
 	Role       Role
 	Locale     string
 	InvitedBy  audit.Actor
+	// Reason is required when the inviter is staff, and is audited.
+	Reason string
+	// Source is where the request came from, for the audit entry.
+	Source audit.Source
 }
 
 // Invite emails a single-use link that lets one person create an account for
@@ -41,7 +45,7 @@ func (s *Service) Invite(ctx context.Context, in InviteInput) (Invitation, error
 		Role: in.Role, Locale: locale, TokenHash: hash,
 		InvitedBy: in.InvitedBy.ID, ExpiresAt: now.Add(s.cfg.InvitationTTL), CreatedAt: now,
 	}
-	fx, err := s.inviteEffects(inv, business, token, in.InvitedBy)
+	fx, err := s.inviteEffects(inv, business, token, in)
 	if err != nil {
 		return Invitation{}, err
 	}
@@ -75,7 +79,7 @@ func cleanLocale(l string) (string, error) {
 }
 
 func (s *Service) inviteEffects(
-	inv Invitation, business, token string, by audit.Actor,
+	inv Invitation, business, token string, in InviteInput,
 ) (Effects, error) {
 	mail, err := s.d.Mailer.Prepare(notify.Message{
 		To: inv.Email, Template: "invitation", Locale: inv.Locale,
@@ -90,7 +94,7 @@ func (s *Service) inviteEffects(
 		return Effects{}, fmt.Errorf("prepare invitation email: %w", err)
 	}
 	entry, err := s.d.Auditor.Prepare(audit.Entry{
-		Actor: by, Action: "invitation.created",
+		Actor: in.InvitedBy, Action: "invitation.created", Reason: in.Reason, Source: in.Source,
 		Target: audit.Target{Kind: "invitation", ID: inv.ID},
 		Change: map[string]string{"merchant": inv.MerchantID, "role": string(inv.Role)},
 	})

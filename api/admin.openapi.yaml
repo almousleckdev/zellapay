@@ -51,6 +51,24 @@ paths:
     $ref: ./admin/passkeys.yaml#/finishRegistration
   /admin/merchants:
     $ref: ./admin/merchants.yaml#/list
+  /admin/overview:
+    $ref: ./admin/merchants.yaml#/overview
+  /admin/merchants/{id}/invitations:
+    $ref: ./admin/merchants.yaml#/invite
+  /admin/operators:
+    $ref: ./admin/approvals.yaml#/operators
+  /admin/approvals:
+    $ref: ./admin/approvals.yaml#/approvals
+  /admin/approvals/{id}/approve:
+    $ref: ./admin/approvals.yaml#/approve
+  /admin/approvals/{id}/reject:
+    $ref: ./admin/approvals.yaml#/reject
+  /admin/merchants/{id}/activity:
+    $ref: ./admin/approvals.yaml#/activity
+  /admin/merchants/{id}/activation:
+    $ref: ./admin/approvals.yaml#/activation
+  /admin/merchants/{id}/fees:
+    $ref: ./admin/approvals.yaml#/fees
   /admin/merchants/{id}:
     $ref: ./admin/merchants.yaml#/detail
   /admin/merchants/{id}/suspend:

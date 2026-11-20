@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -50,6 +51,7 @@ type Container struct {
 	Pool        *pgxpool.Pool
 	Redis       *redis.Client
 	Merchants   *merchants.Service
+	Router      *router.Router
 	Collections *collections.Service
 	Payouts     *payouts.Service
 	Webhooks    *webhooks.Service
@@ -103,15 +105,30 @@ func (c *Container) Close() {
 	_ = c.Redis.Close()
 }
 
-// Ready reports whether the datastores answer.
+// Ready reports whether the datastores answer. The checks run together and
+// give up when ctx ends. The Redis client ignores context deadlines, so its
+// check is abandoned rather than waited for.
 func (c *Container) Ready(ctx context.Context) error {
-	if err := c.Pool.Ping(ctx); err != nil {
-		return fmt.Errorf("database: %w", err)
+	db := make(chan error, 1)
+	cache := make(chan error, 1)
+	go func() { db <- c.Pool.Ping(ctx) }()
+	go func() { cache <- c.Redis.Ping(ctx).Err() }()
+	return errors.Join(
+		awaitCheck(ctx, "database", db),
+		awaitCheck(ctx, "redis", cache),
+	)
+}
+
+func awaitCheck(ctx context.Context, name string, result <-chan error) error {
+	select {
+	case err := <-result:
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("%s: %w", name, ctx.Err())
 	}
-	if err := c.Redis.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("redis: %w", err)
-	}
-	return nil
 }
 
 func (c *Container) assemble(log *slog.Logger) error {
@@ -205,5 +222,7 @@ func (c *Container) buildRouter() (*router.Router, error) {
 	if len(adapters) == 0 {
 		return nil, fmt.Errorf("no operator is configured")
 	}
-	return router.New(rules, adapters...)
+	rt, err := router.New(rules, adapters...)
+	c.Router = rt
+	return rt, err
 }

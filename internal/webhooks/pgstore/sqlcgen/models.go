@@ -174,6 +174,22 @@ type MerchantApiKey struct {
 	Label       string
 }
 
+type MerchantChangeRequest struct {
+	ID             string
+	MerchantID     string
+	Kind           string
+	FeeBps         pgtype.Int4
+	PayoutFeeBps   pgtype.Int4
+	Reason         string
+	RequestedBy    string
+	RequestedAt    pgtype.Timestamptz
+	ExpiresAt      pgtype.Timestamptz
+	Status         string
+	DecidedBy      pgtype.Text
+	DecidedAt      pgtype.Timestamptz
+	DecisionReason pgtype.Text
+}
+
 type MerchantUser struct {
 	ID                string
 	MerchantID        string

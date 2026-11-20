@@ -24,6 +24,7 @@ const usage = `usage:
   zellactl notify test <email>     queue and send a test email (see MailDev)
   zellactl identity invite <merchant-id> <email> <role>   email the first user an invitation
   zellactl staff create-super-admin <email> <name>   password from ZP_STAFF_PASSWORD
+  zellactl dev seed                local only: create the dev staff account (make up runs it)
   zellactl audit head              print the newest audit entry (copy it somewhere safe)
   zellactl audit verify [--full]   check the audit log chain
 
@@ -43,6 +44,7 @@ var builtOnWiring = map[string]func(context.Context, []string) error{
 	"notify":   notifyCommand,
 	"staff":    staffCommand,
 	"identity": identityCommand,
+	"dev":      devCommand,
 }
 
 func run(ctx context.Context, args []string) error {

@@ -46,6 +46,9 @@ func New(rules []Rule, adapters ...operators.Adapter) (*Router, error) {
 	return &Router{rules: sorted, adapters: byCode}, nil
 }
 
+// Rules returns the routing rules, longest prefix first.
+func (r *Router) Rules() []Rule { return append([]Rule(nil), r.rules...) }
+
 // Route returns the adapter for phone, preferring the longest prefix.
 func (r *Router) Route(phone string) (operators.Adapter, error) {
 	for _, rule := range r.rules {

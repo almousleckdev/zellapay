@@ -38,6 +38,70 @@ func (q *Queries) ChangeMerchantStatus(ctx context.Context, arg ChangeMerchantSt
 	return result.RowsAffected(), nil
 }
 
+const countMerchantsByStatus = `-- name: CountMerchantsByStatus :many
+SELECT status, count(*)::int AS n
+  FROM merchants
+ GROUP BY status
+`
+
+type CountMerchantsByStatusRow struct {
+	Status string
+	N      int32
+}
+
+func (q *Queries) CountMerchantsByStatus(ctx context.Context) ([]CountMerchantsByStatusRow, error) {
+	rows, err := q.db.Query(ctx, countMerchantsByStatus)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountMerchantsByStatusRow
+	for rows.Next() {
+		var i CountMerchantsByStatusRow
+		if err := rows.Scan(&i.Status, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countMerchantsCreatedPerDay = `-- name: CountMerchantsCreatedPerDay :many
+SELECT (created_at AT TIME ZONE 'Africa/Libreville')::date AS day, count(*)::int AS n
+  FROM merchants
+ WHERE created_at >= $1
+ GROUP BY 1
+ ORDER BY 1
+`
+
+type CountMerchantsCreatedPerDayRow struct {
+	Day pgtype.Date
+	N   int32
+}
+
+func (q *Queries) CountMerchantsCreatedPerDay(ctx context.Context, since pgtype.Timestamptz) ([]CountMerchantsCreatedPerDayRow, error) {
+	rows, err := q.db.Query(ctx, countMerchantsCreatedPerDay, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountMerchantsCreatedPerDayRow
+	for rows.Next() {
+		var i CountMerchantsCreatedPerDayRow
+		if err := rows.Scan(&i.Day, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createMerchant = `-- name: CreateMerchant :one
 INSERT INTO merchants (id, name, default_currency, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $4)

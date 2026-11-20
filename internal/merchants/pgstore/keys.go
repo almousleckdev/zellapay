@@ -26,16 +26,21 @@ func (s *Store) inTx(
 		if err := work(sqlcgen.New(tx)); err != nil {
 			return err
 		}
-		for _, e := range fx.Audit {
-			if s.audit == nil {
-				return errors.New("pgstore: audit entries given but no audit log configured")
-			}
-			if _, err := s.audit.AppendIn(ctx, tx, e); err != nil {
-				return fmt.Errorf("append audit entry: %w", err)
-			}
-		}
-		return nil
+		return s.appendAudit(ctx, tx, fx)
 	})
+}
+
+// appendAudit writes the audit entries inside the caller's transaction.
+func (s *Store) appendAudit(ctx context.Context, tx pgx.Tx, fx merchants.Effects) error {
+	for _, e := range fx.Audit {
+		if s.audit == nil {
+			return errors.New("pgstore: audit entries given but no audit log configured")
+		}
+		if _, err := s.audit.AppendIn(ctx, tx, e); err != nil {
+			return fmt.Errorf("append audit entry: %w", err)
+		}
+	}
+	return nil
 }
 
 func insertKey(ctx context.Context, q *sqlcgen.Queries, k merchants.APIKey) error {

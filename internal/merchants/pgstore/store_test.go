@@ -178,3 +178,76 @@ func TestChangeStatusIsGuardedAndAudited(t *testing.T) {
 		t.Fatalf("missing = %v", err)
 	}
 }
+
+func auditedService(t *testing.T) *merchants.Service {
+	t.Helper()
+	pool := pgtest.NewPool(t, testDSN)
+	log := auditstore.New(pool)
+	return merchants.NewService(
+		pgstore.New(pool).WithAudit(log), clock.System{}, merchants.ModeTest,
+	).WithAuditor(audit.NewService(log, clock.System{}))
+}
+
+func staffer(id string) merchants.Origin {
+	by := audit.Actor{Kind: audit.ActorStaff, ID: id}
+	return merchants.Origin{By: by, Reason: "contract checked"}
+}
+
+func TestActivationNeedsTwoPeopleAndOnlyOneOpenRequest(t *testing.T) {
+	svc := auditedService(t)
+	ctx := context.Background()
+	m, err := svc.CreateMerchant(ctx, "Soleil", "XAF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := svc.RequestActivation(ctx, m.ID, staffer("stf_a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.RequestActivation(ctx, m.ID, staffer("stf_b"))
+	if !errors.Is(err, merchants.ErrRequestOpen) {
+		t.Fatalf("second open request = %v", err)
+	}
+	self := merchants.Decision{RequestID: req.ID, Approve: true, Origin: staffer("stf_a")}
+	if _, err := svc.Decide(ctx, self); !errors.Is(err, merchants.ErrSelfApproval) {
+		t.Fatalf("self approval = %v", err)
+	}
+	other := merchants.Decision{RequestID: req.ID, Approve: true, Origin: staffer("stf_b")}
+	if _, err := svc.Decide(ctx, other); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := svc.GetMerchant(ctx, m.ID); got.Status != merchants.StatusActive {
+		t.Fatalf("status = %s", got.Status)
+	}
+	pending, _ := svc.ListRequests(ctx, merchants.RequestFilter{Status: merchants.RequestPending})
+	for _, r := range pending {
+		if r.ID == req.ID {
+			t.Fatal("a decided request is still listed as pending")
+		}
+	}
+}
+
+func TestFeeChangeAppliesBothFeesOnApproval(t *testing.T) {
+	svc := auditedService(t)
+	ctx := context.Background()
+	m, _ := svc.CreateMerchant(ctx, "Soleil", "XAF")
+	req, err := svc.RequestFeeChange(ctx, merchants.FeeChange{
+		MerchantID: m.ID, FeeBPS: 150, PayoutFeeBPS: 100, Origin: staffer("stf_a"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Decide(ctx, merchants.Decision{
+		RequestID: req.ID, Approve: true, Origin: staffer("stf_b"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	d, err := svc.Detail(ctx, m.ID)
+	if err != nil || d.FeeBPS != 150 || d.PayoutFeeBPS != 100 {
+		t.Fatalf("detail = %+v, %v", d, err)
+	}
+	listed, _ := svc.ListRequests(ctx, merchants.RequestFilter{MerchantID: m.ID})
+	if len(listed) != 1 || listed[0].MerchantName != "Soleil" {
+		t.Fatalf("listed = %+v", listed)
+	}
+}

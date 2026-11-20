@@ -43,15 +43,20 @@ func (s *Store) WithAudit(a AuditLog) *Store {
 // New returns a Store backed by pool.
 func New(pool *pgxpool.Pool) *Store { return &Store{pool: pool} }
 
-// CreateMerchant inserts m and returns the stored row.
+// CreateMerchant inserts m and its audit entries, and returns the stored row.
 func (s *Store) CreateMerchant(
-	ctx context.Context, m merchants.Merchant,
+	ctx context.Context, m merchants.Merchant, fx merchants.Effects,
 ) (merchants.Merchant, error) {
-	row, err := sqlcgen.New(s.pool).CreateMerchant(ctx, sqlcgen.CreateMerchantParams{
-		ID:              m.ID,
-		Name:            m.Name,
-		DefaultCurrency: m.DefaultCurrency,
-		Now:             ts(m.CreatedAt),
+	var row sqlcgen.CreateMerchantRow
+	err := s.inTx(ctx, fx, func(q *sqlcgen.Queries) error {
+		var err error
+		row, err = q.CreateMerchant(ctx, sqlcgen.CreateMerchantParams{
+			ID:              m.ID,
+			Name:            m.Name,
+			DefaultCurrency: m.DefaultCurrency,
+			Now:             ts(m.CreatedAt),
+		})
+		return err
 	})
 	if err != nil {
 		return merchants.Merchant{}, fmt.Errorf("create merchant: %w", err)

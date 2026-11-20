@@ -1,0 +1,89 @@
+ChangeRequest:
+  type: object
+  required: [id, merchant_id, kind, fee_bps, payout_fee_bps, reason, requested_by,
+             requested_by_you, requested_at, expires_at, status, decided_by,
+             decided_at, decision_reason]
+  properties:
+    id: {type: string}
+    merchant_id: {type: string}
+    merchant_name:
+      type: string
+      description: Present in lists.
+    kind:
+      type: string
+      enum: [activate, fees]
+    fee_bps: {type: [integer, 'null'], description: Fees requests only.}
+    payout_fee_bps: {type: [integer, 'null'], description: Fees requests only.}
+    reason: {type: string}
+    requested_by: {type: string, description: The staff member's ID.}
+    requested_by_you:
+      type: boolean
+      description: True when the caller asked. They cannot decide it.
+    requested_at: {type: string, format: date-time}
+    expires_at:
+      type: string
+      format: date-time
+      description: 24 hours after it was requested.
+    status:
+      type: string
+      enum: [pending, approved, rejected, expired]
+    decided_by: {type: [string, 'null']}
+    decided_at: {type: [string, 'null'], format: date-time}
+    decision_reason: {type: string}
+ChangeRequestList:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/ChangeRequest'
+FeeChange:
+  type: object
+  additionalProperties: false
+  required: [fee_bps, payout_fee_bps, reason]
+  properties:
+    fee_bps:
+      type: integer
+      minimum: 0
+      maximum: 10000
+      description: Collection fee in hundredths of a percent. 150 is 1.50 %.
+    payout_fee_bps:
+      type: integer
+      minimum: 0
+      maximum: 10000
+    reason:
+      type: string
+      minLength: 5
+      maxLength: 500
+Activity:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        type: object
+        required: [action, actor, reason, at, change]
+        properties:
+          action: {type: string, examples: [merchant.suspended]}
+          actor: {type: string, description: A staff name, or the kind of actor.}
+          reason: {type: string}
+          at: {type: string, format: date-time}
+          change:
+            type: object
+            additionalProperties: {type: string}
+Operators:
+  type: object
+  required: [data]
+  properties:
+    data:
+      type: array
+      items:
+        type: object
+        required: [code, prefixes]
+        properties:
+          code: {type: string, examples: [simulator]}
+          prefixes:
+            type: array
+            items: {type: string, examples: ['+241']}

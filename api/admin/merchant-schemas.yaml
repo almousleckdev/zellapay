@@ -52,3 +52,69 @@ StatusReason:
       description: |
         Why staff are doing this. Required, stored in the audit log and shown
         to other staff. Never put personal data in it.
+NewMerchant:
+  type: object
+  additionalProperties: false
+  required: [name, currency, reason]
+  properties:
+    name: {type: string, minLength: 1, maxLength: 100}
+    currency:
+      type: string
+      pattern: '^[A-Z]{3}$'
+      description: ISO 4217 code in capitals, such as `XAF`.
+    reason:
+      type: string
+      minLength: 5
+      maxLength: 500
+      description: Why staff are creating it, such as a contract reference. Audited.
+Invite:
+  type: object
+  additionalProperties: false
+  required: [email, role, reason]
+  properties:
+    email: {type: string, format: email, maxLength: 254}
+    role:
+      type: string
+      enum: [owner, admin, developer, finance, support]
+      description: What the person may do inside the merchant. Use `owner` for the first.
+    locale:
+      type: string
+      enum: [fr, en]
+      description: Language of the invitation email. French when left out.
+    reason:
+      type: string
+      minLength: 5
+      maxLength: 500
+Invitation:
+  type: object
+  required: [id, email, role, expires_at]
+  properties:
+    id: {type: string}
+    email: {type: string, format: email}
+    role: {type: string}
+    expires_at: {type: string, format: date-time}
+Overview:
+  type: object
+  required: [total, by_status, created_by_day, pending_approvals]
+  properties:
+    pending_approvals:
+      type: integer
+      minimum: 0
+      description: Change requests still waiting for a second person.
+    total: {type: integer, minimum: 0}
+    by_status:
+      type: object
+      required: [pending, active, suspended]
+      properties:
+        pending: {type: integer, minimum: 0}
+        active: {type: integer, minimum: 0}
+        suspended: {type: integer, minimum: 0}
+    created_by_day:
+      type: array
+      description: One entry per day in Gabon time, oldest first, zeros included.
+      items:
+        type: object
+        required: [date, count]
+        properties:
+          date: {type: string, format: date}
+          count: {type: integer, minimum: 0}

@@ -23,9 +23,13 @@ import (
 
 // Options configure the server.
 type Options struct {
-	DocsEnabled bool
-	ClientIP    httpauth.ClientIP // defaults to the TCP peer address
+	DocsEnabled  bool
+	ClientIP     httpauth.ClientIP // defaults to the TCP peer address
+	MaxBodyBytes int64
+	Drain        *httpx.Drain
 }
+
+const defaultMaxBody = 1 << 20
 
 // New returns the API handler: health, optional docs, and the versioned
 // merchant API behind authentication, scopes and idempotency.
@@ -33,8 +37,11 @@ func New(c *wiring.Container, opts Options, log *slog.Logger) http.Handler {
 	if opts.ClientIP == nil {
 		opts.ClientIP = httpauth.RemoteAddr
 	}
+	if opts.MaxBodyBytes <= 0 {
+		opts.MaxBodyBytes = defaultMaxBody
+	}
 	mux := http.NewServeMux()
-	httpx.Health(mux, c.Ready)
+	httpx.Health(mux, opts.Drain.Check(httpx.ReadyTimeout, c.Ready))
 	if opts.DocsEnabled {
 		apidocs.Register(mux)
 	}
@@ -44,7 +51,7 @@ func New(c *wiring.Container, opts Options, log *slog.Logger) http.Handler {
 	mountWebhooks(mux, c, opts, log)
 	mountDashboard(mux, c, opts, log)
 	mountAdmin(mux, c, opts, log)
-	return httpx.Middleware(log, mux)
+	return httpx.Harden(log, mux, httpx.BodyLimits{Default: opts.MaxBodyBytes})
 }
 
 func mountCollections(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog.Logger) {
@@ -122,6 +129,8 @@ func mountAdmin(mux *http.ServeMux, c *wiring.Container, opts Options, log *slog
 	}
 	staffapi.New(staffapi.Deps{Staff: c.Staff, ClientIP: clientIP, Log: log}).Mount(mux)
 	adminapi.New(adminapi.Deps{
-		Sessions: c.Staff, Merchants: c.Merchants, ClientIP: clientIP, Log: log,
+		Sessions: c.Staff, Merchants: c.Merchants, Invites: c.Identity,
+		Directory: c.Staff, History: c.Audit, Routing: c.Router,
+		ClientIP: clientIP, Log: log,
 	}).Mount(mux)
 }

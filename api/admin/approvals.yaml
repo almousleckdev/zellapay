@@ -1,0 +1,209 @@
+activation:
+  post:
+    tags: [Merchants]
+    operationId: requestMerchantActivation
+    summary: Ask for a merchant to go live
+    description: |
+      Needs `merchants:activate`. Only a `pending` merchant. A second staff member
+      must approve within 24 hours; the requester cannot. The reason is audited.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/StatusReason
+    responses:
+      '201':
+        description: The request is waiting for a second person.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/ChangeRequest
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition
+fees:
+  post:
+    tags: [Merchants]
+    operationId: requestMerchantFees
+    summary: Ask for a fee change
+    description: |
+      Needs `merchants:fees`. A second staff member must approve within 24 hours;
+      the requester cannot. Nothing changes until it is approved.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./approval-schemas.yaml#/FeeChange
+    responses:
+      '201':
+        description: The request is waiting for a second person.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/ChangeRequest
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition
+activity:
+  get:
+    tags: [Merchants]
+    operationId: getMerchantActivity
+    summary: What was done to a merchant
+    description: |
+      Needs `merchants:read`. The latest 30 audit entries, newest first.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    responses:
+      '200':
+        description: The entries.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/Activity
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+operators:
+  get:
+    tags: [Merchants]
+    operationId: listOperators
+    summary: Mobile money operators and their number prefixes
+    description: |
+      Needs `merchants:read`. Routing is the same for every merchant.
+    security:
+      - sessionAuth: []
+    responses:
+      '200':
+        description: The operators.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/Operators
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+approvals:
+  get:
+    tags: [Merchants]
+    operationId: listApprovals
+    summary: List change requests
+    description: |
+      Needs `merchants:read`. Newest first. An open request past its 24 hours reads as `expired`.
+    security:
+      - sessionAuth: []
+    parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, approved, rejected, expired]
+      - name: merchant_id
+        in: query
+        schema: {type: string}
+    responses:
+      '200':
+        description: The requests.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/ChangeRequestList
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+approve:
+  post:
+    tags: [Merchants]
+    operationId: approveChangeRequest
+    summary: Approve a change request
+    description: |
+      Needs `approvals:decide`. Applies the change in the same transaction. The person who asked gets `403 self_approval`.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/RequestId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/StatusReason
+    responses:
+      '200':
+        description: The decided request.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/ChangeRequest
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition
+reject:
+  post:
+    tags: [Merchants]
+    operationId: rejectChangeRequest
+    summary: Reject a change request
+    description: |
+      Needs `approvals:decide`. The merchant stays as it is.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/RequestId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/StatusReason
+    responses:
+      '200':
+        description: The decided request.
+        content:
+          application/json:
+            schema:
+              $ref: ./approval-schemas.yaml#/ChangeRequest
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+      '409':
+        $ref: ./merchant-common.yaml#/InvalidTransition

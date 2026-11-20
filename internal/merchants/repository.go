@@ -22,7 +22,12 @@ type StoredKey struct {
 
 // Repository is the persistence the service needs.
 type Repository interface {
-	CreateMerchant(ctx context.Context, m Merchant) (Merchant, error)
+	// CreateMerchant stores m and appends the audit entries in one transaction.
+	CreateMerchant(ctx context.Context, m Merchant, fx Effects) (Merchant, error)
+	MerchantCounts(ctx context.Context) (map[Status]int, error)
+	// CreatedPerDay counts merchants created on each local day from since on.
+	// Days with none are left out.
+	CreatedPerDay(ctx context.Context, since time.Time) ([]DayCount, error)
 	GetMerchant(ctx context.Context, id string) (Merchant, error)
 	SetStatus(ctx context.Context, id string, s Status, now time.Time) error
 	ListMerchants(ctx context.Context, q ListQuery) ([]Merchant, error)
@@ -30,6 +35,15 @@ type Repository interface {
 	// the audit entries in one transaction. It returns ErrNotFound when there
 	// is no such merchant and ErrInvalidTransition when it is not in From.
 	ChangeStatus(ctx context.Context, u StatusUpdate, fx Effects) error
+	// CreateChangeRequest stores r and its audit entries. It first expires any
+	// stale open request of the same kind, and returns ErrRequestOpen if a
+	// live one remains.
+	CreateChangeRequest(ctx context.Context, r ChangeRequest, fx Effects) (ChangeRequest, error)
+	// DecideChangeRequest locks the request and asks fn what to do. An approved
+	// outcome applies the change and a failure leaves everything as it was.
+	DecideChangeRequest(ctx context.Context, id string, fn DecideFunc) (ChangeRequest, error)
+	ListChangeRequests(ctx context.Context, f RequestFilter) ([]ChangeRequest, error)
+	CountPendingChangeRequests(ctx context.Context, now time.Time) (int, error)
 	FeeBPS(ctx context.Context, id string) (int, error)
 	PayoutFeeBPS(ctx context.Context, id string) (int, error)
 	SetPayoutFeeBPS(ctx context.Context, id string, bps int, now time.Time) error

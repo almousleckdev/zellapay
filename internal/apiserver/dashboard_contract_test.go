@@ -44,7 +44,7 @@ func operationsOf(t *testing.T, file string) [][2]string {
 func TestEveryDocumentedOperationIsServed(t *testing.T) {
 	e := newEnv(t)
 	for file, want := range map[string]int{
-		"dashboard.openapi.yaml": 20, "admin.openapi.yaml": 12,
+		"dashboard.openapi.yaml": 20, "admin.openapi.yaml": 22,
 	} {
 		ops := operationsOf(t, file)
 		if len(ops) != want {

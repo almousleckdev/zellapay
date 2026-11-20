@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -63,4 +64,32 @@ func (s *Store) ChangeStatus(
 		}
 		return merchants.ErrInvalidTransition
 	})
+}
+
+// MerchantCounts counts merchants in each status.
+func (s *Store) MerchantCounts(ctx context.Context) (map[merchants.Status]int, error) {
+	rows, err := sqlcgen.New(s.pool).CountMerchantsByStatus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("count merchants: %w", err)
+	}
+	out := make(map[merchants.Status]int, len(rows))
+	for _, r := range rows {
+		out[merchants.Status(r.Status)] = int(r.N)
+	}
+	return out, nil
+}
+
+// CreatedPerDay counts merchants created on each Gabon day from since on.
+func (s *Store) CreatedPerDay(
+	ctx context.Context, since time.Time,
+) ([]merchants.DayCount, error) {
+	rows, err := sqlcgen.New(s.pool).CountMerchantsCreatedPerDay(ctx, ts(since))
+	if err != nil {
+		return nil, fmt.Errorf("count merchants per day: %w", err)
+	}
+	out := make([]merchants.DayCount, len(rows))
+	for i, r := range rows {
+		out[i] = merchants.DayCount{Day: r.Day.Time, Count: int(r.N)}
+	}
+	return out, nil
 }

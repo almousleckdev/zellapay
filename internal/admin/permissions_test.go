@@ -7,26 +7,35 @@ import (
 )
 
 func TestRolesHoldExactlyTheirPermissions(t *testing.T) {
-	all := []Permission{MerchantsRead, MerchantsSuspend, MerchantsRestore}
-	tests := []struct {
-		role staff.Role
-		want [3]bool // read, suspend, restore
-	}{
-		{staff.RoleSupport, [3]bool{true, false, false}},
-		{staff.RoleFinance, [3]bool{true, false, false}},
-		{staff.RoleRiskAnalyst, [3]bool{true, true, true}},
-		{staff.RoleAdmin, [3]bool{true, true, true}},
-		{staff.RoleSuperAdmin, [3]bool{true, true, true}},
-		{staff.Role("intern"), [3]bool{false, false, false}},
-		{staff.Role(""), [3]bool{false, false, false}},
+	all := []Permission{
+		MerchantsRead, MerchantsSuspend, MerchantsRestore, MerchantsActivate,
+		MerchantsCreate, MerchantsInvite, MerchantsFees, ApprovalsDecide,
 	}
-	for _, tc := range tests {
-		for i, p := range all {
-			if got := Can(tc.role, p); got != tc.want[i] {
-				t.Errorf("Can(%q, %q) = %v, want %v", tc.role, p, got, tc.want[i])
+	want := map[staff.Role][]Permission{
+		staff.RoleSupport:     {MerchantsRead},
+		staff.RoleFinance:     {MerchantsRead},
+		staff.RoleRiskAnalyst: reviewer,
+		staff.RoleAdmin:       all,
+		staff.RoleSuperAdmin:  all,
+		staff.Role("intern"):  nil,
+		staff.Role(""):        nil,
+	}
+	for role, held := range want {
+		for _, p := range all {
+			if got := Can(role, p); got != contains(held, p) {
+				t.Errorf("Can(%q, %q) = %v, want %v", role, p, got, !got)
 			}
 		}
 	}
+}
+
+func contains(list []Permission, p Permission) bool {
+	for _, x := range list {
+		if x == p {
+			return true
+		}
+	}
+	return false
 }
 
 func TestPermissionsOfIsACopy(t *testing.T) {

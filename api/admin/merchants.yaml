@@ -37,6 +37,34 @@ list:
         $ref: ../dashboard/responses.yaml#/Unauthorized
       '403':
         $ref: ../dashboard/responses.yaml#/Forbidden
+  post:
+    tags: [Merchants]
+    operationId: createMerchant
+    summary: Register a merchant
+    description: |
+      Needs `merchants:create`. The merchant starts `pending` and cannot take
+      payments until it is activated. The reason is audited.
+    security:
+      - sessionAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/NewMerchant
+    responses:
+      '201':
+        description: The merchant was created.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/Merchant
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
 detail:
   get:
     tags: [Merchants]
@@ -129,3 +157,62 @@ restore:
         $ref: ./merchant-common.yaml#/MerchantNotFound
       '409':
         $ref: ./merchant-common.yaml#/InvalidTransition
+invite:
+  post:
+    tags: [Merchants]
+    operationId: inviteMerchantUser
+    summary: Invite a person to a merchant
+    description: |
+      Needs `merchants:invite`. Emails a single-use link; a newer invitation to
+      the same address replaces the older one. The email is sent by the
+      background worker, not by this request. The reason is audited.
+    security:
+      - sessionAuth: []
+    parameters:
+      - $ref: ./merchant-common.yaml#/MerchantId
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ./merchant-schemas.yaml#/Invite
+    responses:
+      '201':
+        description: The invitation was created.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/Invitation
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden
+      '404':
+        $ref: ./merchant-common.yaml#/MerchantNotFound
+overview:
+  get:
+    tags: [Merchants]
+    operationId: getOverview
+    summary: Merchant counts by status and by day
+    description: Needs `merchants:read`. Days are in Gabon time (UTC+1).
+    security:
+      - sessionAuth: []
+    parameters:
+      - name: days
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 90, default: 30}
+    responses:
+      '200':
+        description: The counts.
+        content:
+          application/json:
+            schema:
+              $ref: ./merchant-schemas.yaml#/Overview
+      '400':
+        $ref: ../dashboard/responses.yaml#/BadRequest
+      '401':
+        $ref: ../dashboard/responses.yaml#/Unauthorized
+      '403':
+        $ref: ../dashboard/responses.yaml#/Forbidden

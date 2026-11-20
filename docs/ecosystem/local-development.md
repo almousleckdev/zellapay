@@ -27,9 +27,13 @@ instead. To see it work, run `go run ./cmd/zellactl notify test you@example.test
 
 ```bash
 cd ../zellapay
-make up        # PostgreSQL and Redis
+make up        # env file, PostgreSQL, Redis, MailDev, migrations, dev staff account
 make run-api   # http://localhost:8080
 ```
+
+The first `make up` creates `.env.local` and a staff account for the admin
+console (email and password are `ZP_DEV_STAFF_*` in `.env.local`). Later runs
+change nothing. `make reset` throws the local database away and starts over.
 
 Interactive API documentation is at `http://localhost:8080/docs/` outside
 production.

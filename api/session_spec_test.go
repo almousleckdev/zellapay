@@ -24,7 +24,7 @@ var sessionSpecs = []sessionSpec{
 		"post /dashboard/password/reset":         true,
 		"post /dashboard/session":                true,
 	}},
-	{file: "admin.openapi.yaml", paths: 10, public: map[string]bool{
+	{file: "admin.openapi.yaml", paths: 19, public: map[string]bool{
 		"post /admin/session": true,
 	}},
 }

@@ -3,7 +3,7 @@
 -include .env.local
 .EXPORT_ALL_VARIABLES:
 
-.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate migrate env
+.PHONY: build test race lint vet vuln tidy up down run-api check-limits check generate migrate env seed reset run-worker
 
 build:
 	go build -o bin/ ./cmd/...
@@ -33,8 +33,17 @@ vuln:
 tidy:
 	go mod tidy
 
+# First run: creates .env.local, starts the containers, migrates and seeds.
+# The second make reads .env.local, which did not exist when this one started.
 up:
+	./scripts/init-env.sh
 	docker compose up -d --wait
+	$(MAKE) --no-print-directory migrate seed
+
+# Throws the local database away and starts again from scratch.
+reset:
+	docker compose down -v
+	$(MAKE) --no-print-directory up
 
 down:
 	docker compose down
@@ -45,7 +54,14 @@ env:
 migrate:
 	go run ./cmd/migrate up
 
+seed:
+	go run ./cmd/zellactl dev seed
+
 run-api:
 	go run ./cmd/api
+
+# Sends the emails the API queues, such as merchant invitations.
+run-worker:
+	go run ./cmd/worker
 
 check: check-limits vet race lint

@@ -11,6 +11,8 @@ import (
 	"github.com/zellapay/zellapay/internal/platform/ids"
 )
 
+const maxNameLen = 100
+
 // Service implements merchant and API key use cases.
 type Service struct {
 	repo  Repository
@@ -29,17 +31,26 @@ func NewService(repo Repository, c clock.Clock, mode Mode) *Service {
 
 // CreateMerchant registers a merchant in the pending state.
 func (s *Service) CreateMerchant(ctx context.Context, name, currency string) (Merchant, error) {
+	m, err := s.newMerchant(name, currency)
+	if err != nil {
+		return Merchant{}, err
+	}
+	return s.repo.CreateMerchant(ctx, m, Effects{})
+}
+
+func (s *Service) newMerchant(name, currency string) (Merchant, error) {
 	name = strings.TrimSpace(name)
-	if name == "" || len(currency) != 3 || currency != strings.ToUpper(currency) {
+	if name == "" || len(name) > maxNameLen || len(currency) != 3 ||
+		currency != strings.ToUpper(currency) {
 		return Merchant{}, ErrInvalidInput
 	}
-	return s.repo.CreateMerchant(ctx, Merchant{
+	return Merchant{
 		ID:              ids.New("mer_"),
 		Name:            name,
 		Status:          StatusPending,
 		DefaultCurrency: currency,
 		CreatedAt:       s.clock.Now(),
-	})
+	}, nil
 }
 
 // GetMerchant returns a merchant by ID, or ErrNotFound.

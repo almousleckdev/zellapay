@@ -4,6 +4,12 @@ MerchantId:
   required: true
   description: The merchant ID.
   schema: {type: string}
+RequestId:
+  name: id
+  in: path
+  required: true
+  description: The change request ID.
+  schema: {type: string}
 MerchantNotFound:
   description: No such merchant.
   content:

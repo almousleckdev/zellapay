@@ -2,10 +2,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
 	"github.com/zellapay/zellapay/internal/platform/app"
 	"github.com/zellapay/zellapay/internal/platform/config"
@@ -14,26 +16,30 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		slog.Error("operator-gateway stopped", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	cfg, err := config.Load("operator-gateway", ":8090")
 	if err != nil {
-		slog.Error("config", "err", err)
-		os.Exit(1)
+		return err
 	}
 	log := logging.New(cfg.Service, cfg.LogLevel)
 
-	mux := http.NewServeMux()
-	httpx.Health(mux, nil)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	drain := httpx.NewDrain()
+	srv := app.NewServer(cfg, newHandler(log, cfg, drain))
+	return app.Serve(ctx, log, srv, app.Plan{
+		Timeout: cfg.ShutdownTimeout, DrainDelay: cfg.DrainDelay, Drain: drain,
+	})
+}
 
-	srv := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           httpx.Middleware(log, mux),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
-	if err := app.Serve(log, srv, cfg.ShutdownTimeout); err != nil {
-		log.Error("server", "err", err)
-		os.Exit(1)
-	}
+func newHandler(log *slog.Logger, cfg config.Config, drain *httpx.Drain) http.Handler {
+	mux := http.NewServeMux()
+	httpx.Health(mux, drain.Check(httpx.ReadyTimeout, nil))
+	return httpx.Harden(log, mux, httpx.BodyLimits{Default: cfg.Server.MaxBodyBytes})
 }

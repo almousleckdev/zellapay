@@ -22,6 +22,7 @@ type fakeRepo struct {
 	fees       map[string]int
 	payoutFees map[string]int
 	audits     []audit.Pending
+	requests   []ChangeRequest
 }
 
 func newFakeRepo() *fakeRepo {
@@ -31,11 +32,40 @@ func newFakeRepo() *fakeRepo {
 	}
 }
 
-func (r *fakeRepo) CreateMerchant(_ context.Context, m Merchant) (Merchant, error) {
+func (r *fakeRepo) CreateMerchant(_ context.Context, m Merchant, fx Effects) (Merchant, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.merchants[m.ID] = m
+	r.audits = append(r.audits, fx.Audit...)
 	return m, nil
+}
+
+func (r *fakeRepo) MerchantCounts(_ context.Context) (map[Status]int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := map[Status]int{}
+	for _, m := range r.merchants {
+		out[m.Status]++
+	}
+	return out, nil
+}
+
+func (r *fakeRepo) CreatedPerDay(_ context.Context, since time.Time) ([]DayCount, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	per := map[time.Time]int{}
+	for _, m := range r.merchants {
+		if m.CreatedAt.Before(since) {
+			continue
+		}
+		d := m.CreatedAt.In(gabon)
+		per[time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, gabon)]++
+	}
+	var out []DayCount
+	for d, n := range per {
+		out = append(out, DayCount{Day: d, Count: n})
+	}
+	return out, nil
 }
 
 func (r *fakeRepo) GetMerchant(_ context.Context, id string) (Merchant, error) {

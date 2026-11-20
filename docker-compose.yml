@@ -25,6 +25,13 @@ services:
     # Catches every email the application sends in development. Nothing is
     # delivered to real addresses. Open the inbox at http://localhost:1081.
     image: maildev/maildev:2.1.0
+    # The image probes "localhost", which resolves to IPv6 first, but MailDev
+    # listens on IPv4 only, so the stock check always fails. Probe IPv4.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:1080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     ports:
       - "127.0.0.1:${ZP_MAILDEV_UI_PORT:-1081}:1080"
       - "127.0.0.1:${ZP_SMTP_PORT:-1026}:1025"

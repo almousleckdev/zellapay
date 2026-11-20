@@ -56,7 +56,15 @@ Current:
         shows only these; the backend checks every request anyway.
       items:
         type: string
-        enum: [merchants:read, merchants:suspend, merchants:restore]
+        enum:
+          - merchants:read
+          - merchants:suspend
+          - merchants:restore
+          - merchants:create
+          - merchants:invite
+          - merchants:activate
+          - merchants:fees
+          - approvals:decide
 WebAuthnOptions:
   type: object
   description: |

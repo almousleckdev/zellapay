@@ -26,23 +26,28 @@ func staffCommand(ctx context.Context, args []string) error {
 	if password == "" {
 		return errors.New(staffPasswordVar + ": set it to the password for the new account")
 	}
-	settings, err := wiring.SettingsFromEnv()
-	if err != nil {
-		return err
-	}
-	c, err := wiring.Build(ctx, settings, logging.New("zellactl", "warn"))
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-	u, err := c.Staff.Create(ctx, staff.CreateInput{
-		Email: args[1], Name: args[2], Role: staff.RoleSuperAdmin, Password: password,
-		By: audit.Actor{Kind: audit.ActorSystem, ID: "zellactl"},
-	})
+	u, err := createSuperAdmin(ctx, args[1], args[2], password)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("created %s as %s (%s)\n", u.Email, u.Role, u.ID)
 	fmt.Println("they sign in at the admin console and register a passkey on first use")
 	return nil
+}
+
+// createSuperAdmin builds the real services and creates the account.
+func createSuperAdmin(ctx context.Context, email, name, password string) (staff.User, error) {
+	settings, err := wiring.SettingsFromEnv()
+	if err != nil {
+		return staff.User{}, err
+	}
+	c, err := wiring.Build(ctx, settings, logging.New("zellactl", "warn"))
+	if err != nil {
+		return staff.User{}, err
+	}
+	defer c.Close()
+	return c.Staff.Create(ctx, staff.CreateInput{
+		Email: email, Name: name, Role: staff.RoleSuperAdmin, Password: password,
+		By: audit.Actor{Kind: audit.ActorSystem, ID: "zellactl"},
+	})
 }
